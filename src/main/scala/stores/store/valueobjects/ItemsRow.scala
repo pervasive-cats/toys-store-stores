@@ -14,6 +14,4 @@ trait ItemsRow {
   val catalogItem: CatalogItem
 
   val count: Count
-
-  def updated(catalogItem: CatalogItem, count: Count): ItemsRow
 }

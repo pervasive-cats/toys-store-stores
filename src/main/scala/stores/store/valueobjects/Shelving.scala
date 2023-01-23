@@ -12,10 +12,4 @@ trait Shelving {
   val shelvingId: ShelvingId
 
   val shelves: List[Shelf]
-
-  def addShelf(shelf: Shelf): Shelving
-
-  def removeShelf(shelfId: ShelfId): Shelving
-
-  def updateShelf(shelf: Shelf): Shelving
 }

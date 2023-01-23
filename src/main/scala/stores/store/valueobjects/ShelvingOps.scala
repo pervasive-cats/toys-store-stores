@@ -7,9 +7,11 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-trait Shelf {
+trait ShelvingOps[A <: Shelving] {
 
-  val shelfId: ShelfId
+  def addShelf(shelf: Shelf): A
 
-  val itemsRows: List[ItemsRow]
+  def removeShelf(shelfId: ShelfId): A
+
+  def updateShelf(shelf: Shelf): A
 }

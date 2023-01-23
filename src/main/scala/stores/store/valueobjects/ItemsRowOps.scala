@@ -7,9 +7,7 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-trait Shelf {
+trait ItemsRowOps[A <: ItemsRow] {
 
-  val shelfId: ShelfId
-
-  val itemsRows: List[ItemsRow]
+  def updated(catalogItem: CatalogItem, count: Count): A
 }
