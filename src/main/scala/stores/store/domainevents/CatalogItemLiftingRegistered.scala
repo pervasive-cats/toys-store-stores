@@ -19,5 +19,5 @@ trait CatalogItemLiftingRegistered {
 
   val shelfId: ShelfId
 
-  val itemsRowId:ItemsRowId
+  val itemsRowId: ItemsRowId
 }
