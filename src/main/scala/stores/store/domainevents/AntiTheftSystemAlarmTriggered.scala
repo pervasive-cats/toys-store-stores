@@ -7,4 +7,4 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-trait AntiTheftSystemAlarmTriggered {}
+trait AntiTheftSystemAlarmTriggered
