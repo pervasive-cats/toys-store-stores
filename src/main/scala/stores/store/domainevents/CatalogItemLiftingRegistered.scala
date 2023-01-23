@@ -5,7 +5,7 @@
  */
 
 package io.github.pervasivecats
-package stores.store.events
+package stores.store.domainevents
 
 import stores.store.valueobjects.{ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 

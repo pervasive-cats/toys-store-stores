@@ -5,11 +5,11 @@
  */
 
 package io.github.pervasivecats
-package stores.store.events
+package stores.store.domainevents
 
 import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
 
-trait ItemInsertedInDropSystem {
+trait ItemReturned {
 
   val catalogItem: CatalogItem
   val itemId: ItemId
