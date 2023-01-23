@@ -5,6 +5,11 @@
  */
 
 package io.github.pervasivecats
+package stores.store.valueobjects
 
-@main
-def main(): Unit = println("Hello world!")
+import stores.IdNumber
+
+trait StoreId {
+
+  val value: IdNumber
+}
