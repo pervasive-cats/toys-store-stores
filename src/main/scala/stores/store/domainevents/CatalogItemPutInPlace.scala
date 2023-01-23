@@ -12,5 +12,6 @@ import stores.store.valueobjects.{CatalogItem, StoreId}
 trait CatalogItemPutInPlace {
 
   val catalogItem: CatalogItem
+
   val storeId: StoreId
 }

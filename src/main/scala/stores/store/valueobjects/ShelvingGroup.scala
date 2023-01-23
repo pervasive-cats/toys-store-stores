@@ -10,6 +10,7 @@ package stores.store.valueobjects
 trait ShelvingGroup {
 
   val shelvingGroupId: ShelvingGroupId
+
   val shelvings: List[Shelving]
 
   def addShelving(shelving: Shelving): ShelvingGroup

@@ -10,5 +10,6 @@ package stores.store.valueobjects
 trait Item {
 
   val catalogItem: CatalogItem
+
   val id: ItemId
 }

@@ -10,6 +10,7 @@ package stores.store.valueobjects
 trait Shelving {
 
   val shelvingId: ShelvingId
+
   val shelves: List[Shelf]
 
   def addShelf(shelf: Shelf): Shelving

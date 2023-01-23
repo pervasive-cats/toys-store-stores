@@ -10,7 +10,9 @@ package stores.store.valueobjects
 trait ItemsRow {
 
   val itemsRowId: ItemsRowId
+
   val catalogItem: CatalogItem
+
   val count: Count
 
   def updated(catalogItem: CatalogItem, count: Count): ItemsRow

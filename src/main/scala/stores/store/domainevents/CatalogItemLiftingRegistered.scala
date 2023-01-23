@@ -12,8 +12,12 @@ import stores.store.valueobjects.{ItemsRowId, ShelfId, ShelvingGroupId, Shelving
 trait CatalogItemLiftingRegistered {
 
   val storeId: StoreId
+
   val shelvingGroupId: ShelvingGroupId
+
   val shelvingId: ShelvingId
+
   val shelfId: ShelfId
+
   val itemsRowId:ItemsRowId
 }

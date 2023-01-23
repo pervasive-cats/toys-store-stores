@@ -12,6 +12,8 @@ import stores.store.valueobjects.{CatalogItem, Item, StoreId}
 trait ItemDetected {
 
   val item: Item
+
   val catalogItem: CatalogItem
+
   val storeId: StoreId
 }
