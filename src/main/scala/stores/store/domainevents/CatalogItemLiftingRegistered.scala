@@ -21,3 +21,25 @@ trait CatalogItemLiftingRegistered {
 
   val itemsRowId: ItemsRowId
 }
+
+object CatalogItemLiftingRegistered {
+
+  private case class CatalogItemLiftingRegisteredImpl(
+                                                       storeId: StoreId,
+                                                       shelvingGroupId: ShelvingGroupId,
+                                                       shelvingId: ShelvingId,
+                                                       shelfId: ShelfId,
+                                                       itemsRowId: ItemsRowId) extends CatalogItemLiftingRegistered
+
+  def apply(storeId: StoreId,
+            shelvingGroupId: ShelvingGroupId,
+            shelvingId: ShelvingId,
+            shelfId: ShelfId,
+            itemsRowId: ItemsRowId): CatalogItemLiftingRegistered = CatalogItemLiftingRegisteredImpl(
+    storeId,
+    shelvingGroupId,
+    shelvingId,
+    shelfId,
+    itemsRowId
+  )
+}
