@@ -15,3 +15,10 @@ trait CatalogItemPutInPlace {
 
   val storeId: StoreId
 }
+
+object CatalogItemPutInPlace {
+
+  private case class CatalogItemPutInPlaceImpl(catalogItem: CatalogItem, storeId: StoreId) extends CatalogItemPutInPlace
+
+  def apply(catalogItem: CatalogItem, storeId: StoreId): CatalogItemPutInPlace = CatalogItemPutInPlaceImpl(catalogItem, storeId)
+}
