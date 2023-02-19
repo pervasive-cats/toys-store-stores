@@ -7,6 +7,10 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
+import eu.timepit.refined.api.RefType.applyRef
+import stores.{Validated, ValidationError}
+import eu.timepit.refined.auto.autoUnwrap
+
 trait ItemsRow {
 
   val itemsRowId: ItemsRowId
@@ -14,4 +18,16 @@ trait ItemsRow {
   val catalogItem: CatalogItem
 
   val count: Count
+}
+
+object ItemsRow {
+
+  final private case class ItemsRowImpl(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count) extends ItemsRow
+
+  given ItemsRowOps[ItemsRow] with {
+
+    override def updated(itemsRow: ItemsRow, catalogItem: CatalogItem, count: Count): ItemsRow = ItemsRowImpl(itemsRow.itemsRowId, catalogItem, count)
+  }
+
+  def apply(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count): ItemsRow = ItemsRowImpl(itemsRowId, catalogItem, count)
 }

@@ -7,7 +7,17 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
+import stores.Validated
+
 trait ItemsRowOps[A <: ItemsRow] {
 
-  def updated(catalogItem: CatalogItem, count: Count): A
+  def updated(itemsRow: ItemsRow, catalogItem: CatalogItem, count: Count): A
+}
+
+object ItemsRowOps {
+
+  extension[A <: ItemsRow: ItemsRowOps](itemsRow: A){
+
+    def updated(catalogItem: CatalogItem, count: Count): ItemsRow = implicitly[ItemsRowOps[A]].updated(itemsRow, catalogItem, count)
+  }
 }
