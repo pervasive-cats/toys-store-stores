@@ -7,9 +7,26 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-import stores.Id
+import stores.{Id, Validated, ValidationError}
+
+import eu.timepit.refined.api.RefType.applyRef
 
 trait StoreId {
 
   val value: Id
+}
+
+object StoreId {
+
+  private case class StoreIdImpl(value: Id) extends StoreId
+
+  case object WrongStoreIdFormat extends ValidationError {
+
+    override val message: String = "The shelving id format is invalid"
+  }
+
+  def apply(value: Long): Validated[StoreId] = applyRef[Id](value) match {
+    case Left(_) => Left[ValidationError, StoreId](WrongStoreIdFormat)
+    case Right(value) => Right[ValidationError, StoreId](StoreIdImpl(value))
+  }
 }
