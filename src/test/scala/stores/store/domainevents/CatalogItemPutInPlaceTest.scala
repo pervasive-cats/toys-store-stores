@@ -12,9 +12,9 @@ class CatalogItemPutInPlaceTest extends AnyFunSpec{
       it("should be contain them") {
         val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
         val storeId: StoreId = StoreId(8140).getOrElse(fail())
-        val catalogItemLifted: CatalogItemLifted = CatalogItemLifted(catalogItem, storeId)
-        catalogItemLifted.catalogItem shouldBe catalogItem
-        catalogItemLifted.storeId shouldBe storeId
+        val catalogItemPutInPlace: CatalogItemPutInPlace = CatalogItemPutInPlace(catalogItem, storeId)
+        catalogItemPutInPlace.catalogItem shouldBe catalogItem
+        catalogItemPutInPlace.storeId shouldBe storeId
       }
     }
   }
