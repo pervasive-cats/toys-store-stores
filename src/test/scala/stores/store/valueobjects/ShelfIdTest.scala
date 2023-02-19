@@ -1,12 +1,12 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-import org.scalatest.funspec.AnyFunSpec
 import eu.timepit.refined.auto.given
-import stores.store.valueobjects.ShelfId.WrongShelfIdFormat
-
 import org.scalatest.EitherValues.given
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+
+import stores.store.valueobjects.ShelfId.WrongShelfIdFormat
 
 class ShelfIdTest extends AnyFunSpec {
 

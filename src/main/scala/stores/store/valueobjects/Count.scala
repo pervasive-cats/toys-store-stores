@@ -7,10 +7,12 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
+import io.github.pervasivecats.stores.Validated
+import io.github.pervasivecats.stores.ValidationError
+
 import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.NonNegative
-import io.github.pervasivecats.stores.{Validated, ValidationError}
 
 type CountInt = Int Refined NonNegative
 

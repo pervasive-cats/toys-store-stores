@@ -7,9 +7,9 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-import stores.{Id, Validated, ValidationError}
-
 import eu.timepit.refined.api.RefType.applyRef
+
+import stores.{Id, Validated, ValidationError}
 
 trait ItemsRowId {
 
@@ -18,7 +18,7 @@ trait ItemsRowId {
 
 object ItemsRowId {
 
-  private final case class ItemsRowIdImpl(value: Id) extends ItemsRowId
+  final private case class ItemsRowIdImpl(value: Id) extends ItemsRowId
 
   case object WrongItemsRowId extends ValidationError {
 

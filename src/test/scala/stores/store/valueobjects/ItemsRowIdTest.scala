@@ -1,11 +1,12 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-import org.scalatest.funspec.AnyFunSpec
 import eu.timepit.refined.auto.given
-import stores.store.valueobjects.ItemsRowId.WrongItemsRowId
 import org.scalatest.EitherValues.given
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+
+import stores.store.valueobjects.ItemsRowId.WrongItemsRowId
 
 class ItemsRowIdTest extends AnyFunSpec {
 

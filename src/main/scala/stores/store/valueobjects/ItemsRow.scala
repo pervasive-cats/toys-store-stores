@@ -8,8 +8,9 @@ package io.github.pervasivecats
 package stores.store.valueobjects
 
 import eu.timepit.refined.api.RefType.applyRef
-import stores.{Validated, ValidationError}
 import eu.timepit.refined.auto.autoUnwrap
+
+import stores.{Validated, ValidationError}
 
 trait ItemsRow {
 
@@ -26,8 +27,10 @@ object ItemsRow {
 
   given ItemsRowOps[ItemsRow] with {
 
-    override def updated(itemsRow: ItemsRow, catalogItem: CatalogItem, count: Count): ItemsRow = ItemsRowImpl(itemsRow.itemsRowId, catalogItem, count)
+    override def updated(itemsRow: ItemsRow, catalogItem: CatalogItem, count: Count): ItemsRow =
+      ItemsRowImpl(itemsRow.itemsRowId, catalogItem, count)
   }
 
-  def apply(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count): ItemsRow = ItemsRowImpl(itemsRowId, catalogItem, count)
+  def apply(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count): ItemsRow =
+    ItemsRowImpl(itemsRowId, catalogItem, count)
 }

@@ -1,9 +1,10 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+
+import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
 
 class ItemReturnedTest extends AnyFunSpec {
 

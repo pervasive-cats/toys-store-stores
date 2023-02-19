@@ -1,16 +1,16 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
+import scala.language.postfixOps
+
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 
-import scala.language.postfixOps
-
 class ItemsRowTest extends AnyFunSpec {
 
-  describe("An items row"){
-    describe("when created with an id, a catalog item and a count"){
-      it("should contain them"){
+  describe("An items row") {
+    describe("when created with an id, a catalog item and a count") {
+      it("should contain them") {
         val itemsRowId: ItemsRowId = ItemsRowId(9000).getOrElse(fail())
         val catalogItem: CatalogItem = CatalogItem(8541).getOrElse(fail())
         val count: Count = Count(150).getOrElse(fail())
@@ -21,7 +21,7 @@ class ItemsRowTest extends AnyFunSpec {
       }
     }
 
-    describe("when updated with a new count"){
+    describe("when updated with a new count") {
       val itemsRowId: ItemsRowId = ItemsRowId(9000).getOrElse(fail())
       val catalogItem: CatalogItem = CatalogItem(8541).getOrElse(fail())
       val count: Count = Count(150).getOrElse(fail())

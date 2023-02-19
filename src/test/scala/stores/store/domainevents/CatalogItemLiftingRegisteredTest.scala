@@ -1,12 +1,12 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import stores.store.valueobjects.{CatalogItem, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
+import scala.language.postfixOps
 
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 
-import scala.language.postfixOps
+import stores.store.valueobjects.{CatalogItem, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 class CatalogItemLiftingRegisteredTest extends AnyFunSpec {
 
@@ -18,7 +18,8 @@ class CatalogItemLiftingRegisteredTest extends AnyFunSpec {
         val shelvingId: ShelvingId = ShelvingId(9002).getOrElse(fail())
         val shelfId: ShelfId = ShelfId(9003).getOrElse(fail())
         val itemsRowId: ItemsRowId = ItemsRowId(9004).getOrElse(fail())
-        val catalogItemLiftingRegistered: CatalogItemLiftingRegistered = CatalogItemLiftingRegistered(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+        val catalogItemLiftingRegistered: CatalogItemLiftingRegistered =
+          CatalogItemLiftingRegistered(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
         catalogItemLiftingRegistered.storeId shouldBe storeId
         catalogItemLiftingRegistered.shelvingGroupId shouldBe shelvingGroupId
         catalogItemLiftingRegistered.shelvingId shouldBe shelvingId

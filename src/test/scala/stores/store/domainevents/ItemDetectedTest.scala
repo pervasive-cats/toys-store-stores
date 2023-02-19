@@ -1,14 +1,15 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import stores.store.valueobjects.{CatalogItem, Item, ItemId, StoreId}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+
+import stores.store.valueobjects.{CatalogItem, Item, ItemId, StoreId}
 
 class ItemDetectedTest extends AnyFunSpec {
 
   describe("An item detected") {
-    describe("when created with an item item, a catalog item and a store id") {
+    describe("when created with an item, a catalog item and a store id") {
       it("should be contain them") {
         val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
         val itemId: ItemId = ItemId(9231).getOrElse(fail())

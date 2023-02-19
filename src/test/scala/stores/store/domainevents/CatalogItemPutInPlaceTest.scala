@@ -1,11 +1,13 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, StoreId}
+import io.github.pervasivecats.stores.store.valueobjects.CatalogItem
+import io.github.pervasivecats.stores.store.valueobjects.StoreId
+
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 
-class CatalogItemPutInPlaceTest extends AnyFunSpec{
+class CatalogItemPutInPlaceTest extends AnyFunSpec {
 
   describe("A catalog item put in place") {
     describe("when created with a catalog item and a store id") {

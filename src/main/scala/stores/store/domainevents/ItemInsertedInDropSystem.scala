@@ -20,7 +20,9 @@ trait ItemInsertedInDropSystem {
 
 object ItemInsertedInDropSystem {
 
-  private case class ItemInsertedInDropSystemImpl(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId) extends ItemInsertedInDropSystem
+  private case class ItemInsertedInDropSystemImpl(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId)
+    extends ItemInsertedInDropSystem
 
-  def apply(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId): ItemInsertedInDropSystem = ItemInsertedInDropSystemImpl(catalogItem, itemId, storeId)
+  def apply(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId): ItemInsertedInDropSystem =
+    ItemInsertedInDropSystemImpl(catalogItem, itemId, storeId)
 }

@@ -1,7 +1,11 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, Item, ItemId, StoreId}
+import io.github.pervasivecats.stores.store.valueobjects.CatalogItem
+import io.github.pervasivecats.stores.store.valueobjects.Item
+import io.github.pervasivecats.stores.store.valueobjects.ItemId
+import io.github.pervasivecats.stores.store.valueobjects.StoreId
+
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 

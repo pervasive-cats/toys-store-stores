@@ -25,17 +25,20 @@ trait CatalogItemLiftingRegistered {
 object CatalogItemLiftingRegistered {
 
   private case class CatalogItemLiftingRegisteredImpl(
-                                                       storeId: StoreId,
-                                                       shelvingGroupId: ShelvingGroupId,
-                                                       shelvingId: ShelvingId,
-                                                       shelfId: ShelfId,
-                                                       itemsRowId: ItemsRowId) extends CatalogItemLiftingRegistered
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ) extends CatalogItemLiftingRegistered
 
-  def apply(storeId: StoreId,
-            shelvingGroupId: ShelvingGroupId,
-            shelvingId: ShelvingId,
-            shelfId: ShelfId,
-            itemsRowId: ItemsRowId): CatalogItemLiftingRegistered = CatalogItemLiftingRegisteredImpl(
+  def apply(
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ): CatalogItemLiftingRegistered = CatalogItemLiftingRegisteredImpl(
     storeId,
     shelvingGroupId,
     shelvingId,
