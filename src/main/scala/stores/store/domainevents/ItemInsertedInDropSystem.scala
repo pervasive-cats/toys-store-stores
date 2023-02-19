@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
+import stores.store.valueobjects.{CatalogItem, Item, ItemId, StoreId}
 
 trait ItemInsertedInDropSystem {
 
@@ -16,4 +16,11 @@ trait ItemInsertedInDropSystem {
   val itemId: ItemId
 
   val storeId: StoreId
+}
+
+object ItemInsertedInDropSystem {
+
+  private case class ItemInsertedInDropSystemImpl(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId) extends ItemInsertedInDropSystem
+
+  def apply(catalogItem: CatalogItem, itemId: ItemId, storeId: StoreId): ItemInsertedInDropSystem = ItemInsertedInDropSystemImpl(catalogItem, itemId, storeId)
 }
