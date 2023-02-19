@@ -17,3 +17,10 @@ trait ItemDetected {
 
   val storeId: StoreId
 }
+
+object ItemDetected {
+
+  private case class ItemDetectedImpl(item: Item, catalogItem: CatalogItem, storeId: StoreId) extends ItemDetected
+
+  def apply(item: Item, catalogItem: CatalogItem, storeId: StoreId): ItemDetected = ItemDetectedImpl(item, catalogItem, storeId)
+}
