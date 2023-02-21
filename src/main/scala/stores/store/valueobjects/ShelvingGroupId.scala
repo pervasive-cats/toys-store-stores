@@ -22,7 +22,7 @@ object ShelvingGroupId {
 
   case object WrongShelvingGroupIdFormat extends ValidationError {
 
-    override val message: String = "The shelving group id format is invalid"
+    override val message: String = "The shelving group id is invalid"
   }
 
   def apply(value: Long): Validated[ShelvingGroupId] = applyRef[Id](value) match {

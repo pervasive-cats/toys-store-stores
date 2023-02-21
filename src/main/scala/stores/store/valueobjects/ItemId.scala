@@ -22,7 +22,7 @@ object ItemId {
 
   case object WrongItemIdFormat extends ValidationError {
 
-    override val message: String = "The item id format is invalid"
+    override val message: String = "The item id is a negative value"
   }
 
   def apply(value: Long): Validated[ItemId] = applyRef[Id](value) match {
