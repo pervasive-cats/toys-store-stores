@@ -22,7 +22,7 @@ object ShelvingId {
 
   case object WrongShelvingIdFormat extends ValidationError {
 
-    override val message: String = "The shelving id is invalid"
+    override val message: String = "The shelving id is a negative value"
   }
 
   def apply(value: Long): Validated[ShelvingId] = applyRef[Id](value) match {
