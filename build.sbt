@@ -28,7 +28,15 @@ lazy val root = project
     libraryDependencies ++= Seq(
       scalactic,
       scalatest,
-      refined
+      refined,
+      akka,
+      akkaStream,
+      akkaHttp,
+      akkaHttpSprayJson,
+      akkaTestKit,
+      rabbitMQ,
+      akkaStreamTestkit,
+      akkaHttpTestkit
     ),
     wartremoverErrors ++= Warts.allBut(Wart.ImplicitParameter),
     version := "1.0.0-beta.2",
