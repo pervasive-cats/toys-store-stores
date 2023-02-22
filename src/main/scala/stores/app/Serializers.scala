@@ -10,6 +10,7 @@ package stores.app
 import stores.Validated
 
 import eu.timepit.refined.auto.given
+import io.github.pervasivecats.stores.store.domainevents.{CatalogItemLifted, CatalogItemLiftingRegistered, ItemReturned}
 import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, Item, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, deserializationError, enrichAny}
 
@@ -38,15 +39,15 @@ object Serializers extends DefaultJsonProtocol {
 
   given JsonFormat[CatalogItem] = longSerializer(_.id, CatalogItem.apply)
 
-  /*given JsonFormat[Item] with {
+  given JsonFormat[Item] with {
 
     override def read(json: JsValue): Item =
       json.asJsObject.getFields("catalogItem", "id") match {
         case Seq(JsNumber(catalogItem), JsNumber(id)) if catalogItem.isValidLong && id.isValidLong =>
-          for {
+          (for {
             c <- CatalogItem(catalogItem.longValue)
             i <- ItemId(id.longValue)
-          } yield Item(c, i)
+          } yield Item(c, i)).fold(e => deserializationError(e.message), identity)
         case _ => deserializationError(msg = "Json format is not valid")
       }
 
@@ -54,7 +55,7 @@ object Serializers extends DefaultJsonProtocol {
       "catalogItem" -> item.catalogItem.toJson,
       "id" -> item.id.toJson
     )
-  }*/
+  }
 
   given JsonFormat[ItemId] = longSerializer(_.value, ItemId.apply)
 
@@ -68,6 +69,63 @@ object Serializers extends DefaultJsonProtocol {
 
   given JsonFormat[StoreId] = longSerializer(_.value, StoreId.apply)
 
+  given JsonFormat[CatalogItemLifted] with {
 
+    override def read(json: JsValue): CatalogItemLifted = json.asJsObject.getFields("catalogItem", "storeId") match {
+      case Seq(JsNumber(catalogItem), JsNumber(storeId)) if catalogItem.isValidLong && storeId.isValidLong =>
+        (for {
+          c <- CatalogItem(catalogItem.longValue)
+          s <- StoreId(storeId.longValue)
+        } yield CatalogItemLifted(c,s)).fold(e => deserializationError(e.message), identity)
+      case _ => deserializationError(msg = "Json format is not valid")
+    }
 
+    override def write(obj: CatalogItemLifted): JsValue = JsObject(
+      "catalogItem" -> obj.catalogItem.toJson,
+      "storeId" -> obj.storeId.toJson
+    )
+  }
+
+  given JsonFormat[ItemReturned] with {
+
+    override def read(json: JsValue): ItemReturned = json.asJsObject.getFields("catalogItem", "itemId", "storeId") match {
+      case Seq(JsNumber(catalogItem), JsNumber(itemId), JsNumber(storeId)) if catalogItem.isValidLong && itemId.isValidLong && storeId.isValidLong =>
+        (for {
+          c <- CatalogItem(catalogItem.longValue)
+          i <- ItemId(itemId.longValue)
+          s <- StoreId(storeId.longValue)
+        } yield ItemReturned(c,i,s)).fold(e => deserializationError(e.message), identity)
+      case _ => deserializationError(msg = "Json format is not valid")
+    }
+
+    override def write(obj: ItemReturned): JsValue = JsObject(
+      "catalogItem" -> obj.catalogItem.toJson,
+      "itemId" -> obj.itemId.toJson,
+      "storeId" -> obj.storeId.toJson
+    )
+  }
+
+  given JsonFormat[CatalogItemLiftingRegistered] with {
+
+    override def read(json: JsValue): CatalogItemLiftingRegistered =
+      json.asJsObject.getFields("storeId", "shelvingGroupId", "shelvingId", "shelfId", "itemsRowId") match {
+        case Seq(JsNumber(storeId), JsNumber(shelvingGroupId), JsNumber(shelvingId),JsNumber(shelfId),JsNumber(itemsRowId))
+          if storeId.isValidLong && shelvingGroupId.isValidLong && shelvingId.isValidLong && shelfId.isValidLong && itemsRowId.isValidLong =>
+            (for{
+              store <- StoreId(storeId.longValue)
+              shelvingGroup <- ShelvingGroupId(shelvingGroupId.longValue)
+              shelving <- ShelvingId(shelvingId.longValue)
+              shelf <- ShelfId(shelfId.longValue)
+              itemsRow <- ItemsRowId(itemsRowId.longValue)
+            } yield CatalogItemLiftingRegistered(store, shelvingGroup, shelving, shelf, itemsRow)).fold(e => deserializationError(e.message), identity)
+      }
+
+    override def write(obj: CatalogItemLiftingRegistered): JsValue = JsObject(
+      "storeId" -> obj.storeId.toJson,
+      "shelvingGroupId" -> obj.shelvingGroupId.toJson,
+      "shelvingId" -> obj.shelvingId.toJson,
+      "shelfId" -> obj.shelfId.toJson,
+      "itemsRowId" -> obj.itemsRowId.toJson
+    )
+  }
 }
