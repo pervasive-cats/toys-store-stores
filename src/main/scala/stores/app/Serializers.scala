@@ -8,10 +8,10 @@ package io.github.pervasivecats
 package stores.app
 
 import stores.Validated
+import stores.store.domainevents.{CatalogItemLifted, CatalogItemLiftingRegistered, ItemReturned}
+import stores.store.valueobjects.*
 
 import eu.timepit.refined.auto.given
-import io.github.pervasivecats.stores.store.domainevents.{CatalogItemLifted, CatalogItemLiftingRegistered, ItemReturned}
-import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, Item, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, deserializationError, enrichAny}
 
 object Serializers extends DefaultJsonProtocol {
