@@ -1,0 +1,198 @@
+{
+    "@context": "https://www.w3.org/2019/wot/td/v1",
+    "title": "Drop System",
+    "@type": "tm:ThingModel",
+    "base": "http://localhost:8080/api/2/things",
+    "description": "A drop system that can be used by customers for removing products from their own digital cart.",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": "nosec_sc",
+    "uriVariables": {
+        "store": {
+            "title": "store",
+            "description": "The store in which the drop system is placed.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "properties": {
+        "store": {
+            "title": "store",
+            "observable": false,
+            "readOnly": true,
+            "description": "The store in which the drop system is placed.",
+            "type": "integer",
+            "minimum": 0,
+            "forms": [
+                {
+                    "op": [
+                        "readproperty"
+                    ],
+                    "href": "/io.github.pervasivecats:dropsystem-{store}/attributes/store"
+                }
+            ]
+        }
+    },
+    "actions": {
+        "showItemData": {
+            "title": "showItemData",
+            "description": "Shows the data for a given item to the customer, so as to allow them to return it or not.",
+            "forms": [
+                {
+                    "op": [
+                        "invokeaction"
+                    ],
+                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/inbox/showItemData",
+                    "contentType": "application/json",
+                    "response": {
+                        "contentType": "application/json"
+                    }
+                }
+            ],
+            "safe": false,
+            "idempotent": false,
+            "input": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "description",
+                    "amount",
+                    "currency"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "amount": {
+                        "type": "number",
+                        "minimum": 0.01
+                    },
+                    "currency": {
+                        "type": "string",
+                        "enum": ["EUR", "GBP", "USD", "CHF"]
+                    }
+                }
+            },
+            "output": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "required": [
+                            "error",
+                            "result"
+                        ],
+                        "properties": {
+                            "result": {
+                                "type": "integer",
+                                "const": 1
+                            },
+                            "error": {
+                                "type": "null"
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "error",
+                            "result"
+                        ],
+                        "properties": {
+                            "result": {
+                                "type": "null"
+                            },
+                            "error": {
+                                "type": "object",
+                                "required": [
+                                    "type",
+                                    "message"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ItemDataNotSent"
+                                        ]
+                                    },
+                                    "message": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "events": {
+        "itemInsertedIntoDropSystem": {
+            "title": "itemInsertedIntoDropSystem",
+            "description": "A customer inserted an item into the drop system.",
+            "forms": [
+                {
+                    "op": [
+                        "subscribeevent"
+                    ],
+                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/outbox/itemInsertedIntoDropSystem",
+                    "contentType": "application/json"
+                }
+            ],
+            "data": {
+                "type": "object",
+                "required": [
+                    "catalogItem",
+                    "itemId"
+                ],
+                "properties": {
+                    "catalogItem": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "itemId": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                }
+            }
+        },
+        "itemReturned": {
+            "title": "itemReturned",
+            "description": "A customer returned an item via the drop system.",
+            "forms": [
+                {
+                    "op": [
+                        "subscribeevent"
+                    ],
+                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/outbox/itemReturned",
+                    "contentType": "application/json"
+                }
+            ],
+            "data": {
+                "type": "object",
+                "required": [
+                    "catalogItem",
+                    "itemId"
+                ],
+                "properties": {
+                    "catalogItem": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "itemId": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                }
+            }
+        }
+    }
+}
