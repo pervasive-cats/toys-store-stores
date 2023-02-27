@@ -1,0 +1,502 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "Shelving",
+  "@type": "tm:ThingModel",
+  "base": "http://localhost:8080/api/2/things/",
+  "description": "A shelving inside a store",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "uriVariables": {
+    "storeId": {
+      "title": "storeId",
+      "description": "The id for the store this shelving belongs to.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "shelvingGroupId": {
+      "title": "shelvingGroupId",
+      "description": "The id for the shelving group this shelving belongs to.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "id": {
+      "title": "id",
+      "description": "The id of the shelving in its store.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "properties": {
+    "storeId": {
+      "title": "storeId",
+      "observable": false,
+      "readOnly": true,
+      "description": "The id for the store this shelving belongs to.",
+      "type": "integer",
+      "minimum": 0,
+      "forms": [
+        {
+          "op": [
+            "readproperty"
+          ],
+          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/storeId"
+        }
+      ]
+    },
+    "shelvingGroupId": {
+      "title": "shelvingGroupId",
+      "description": "The id for the shelving group this shelving belongs to.",
+      "type": "integer",
+      "minimum": 0,
+      "forms": [
+        {
+          "op": [
+            "readproperty"
+          ],
+          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/shelvingGroupId"
+        }
+      ]
+    },
+    "id": {
+      "title": "id",
+      "observable": false,
+      "readOnly": true,
+      "description": "The id of the shelving in its store.",
+      "type": "integer",
+      "minimum": 0,
+      "forms": [
+        {
+          "op": [
+            "readproperty"
+          ],
+          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/id"
+        }
+      ]
+    },
+    "shelves": {
+      "title": "shelves",
+      "description": "The shelves belonging to this shelving",
+      "observable": false,
+      "readOnly": true,
+      "type": "array",
+      "items": {
+        "shelf": {
+          "title": "shelf",
+          "description": "A shelf belonging to this shelving",
+          "type": "object",
+          "required": [
+            "shelfId",
+            "itemRows"
+          ],
+          "properties": {
+            "shelfId": {
+              "title": "shelfId",
+              "description": "The id for this shelf",
+              "type": "integer",
+              "minimum": 0
+            },
+            "itemRows": {
+              "title": "itemRows",
+              "description": "The rows of items belonging to this shelf",
+              "observable": false,
+              "readOnly": true,
+              "type": "array",
+              "items": {
+                "itemRowId": {
+                  "title": "itemRowId",
+                  "description": "The id of the row of items belonging to this shelf",
+                  "observable": false,
+                  "readOnly": true,
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "forms": [
+        {
+          "op": [
+            "readproperty"
+          ],
+          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/shelves"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "addShelf": {
+        "title": "addShelf",
+        "description": "Add a shelf to this shelving.",
+        "forms": [
+            {
+                "op": [
+                    "invokeaction"
+                ],
+                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/addShelf",
+                "contentType": "application/json",
+                "response": {
+                    "contentType": "application/json"
+                }
+            }
+        ],
+        "safe": false,
+        "idempotent": false,
+        "input": {
+            "type": "object",
+            "required": [
+                "shelfId"
+            ],
+           "properties": {
+               "shelfId": {
+                    "type": "integer",
+                    "minimum": 0 
+               } 
+           } 
+        },
+        "output": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "integer",
+                            "const": 1
+                        },
+                        "error": {
+                            "type": "null"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "null"
+                        },
+                        "error": {
+                            "type": "object",
+                            "required": [
+                                "errorType",
+                                "message"
+                            ],
+                            "properties": {
+                                "errorType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ShelfIdAlreadyPresent",
+                                        "ShelfIdNotAdded"
+                                    ]
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "removeShelf": {
+        "title": "removeShelf",
+        "description": "Remove a shelf from this shelving.",
+        "forms": [
+            {
+                "op": [
+                    "invokeaction"
+                ],
+                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/removeShelf",
+                "contentType": "application/json",
+                "response": {
+                    "contentType": "application/json"
+                }
+            }
+        ],
+        "safe": false,
+        "idempotent": false,
+        "input": {
+            "type": "object",
+            "required": [
+                "shelfId"
+            ],
+           "properties": {
+               "shelfId": {
+                    "type": "integer",
+                    "minimum": 0 
+               } 
+           } 
+        },
+        "output": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "integer",
+                            "const": 1
+                        },
+                        "error": {
+                            "type": "null"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "null"
+                        },
+                        "error": {
+                            "type": "object",
+                            "required": [
+                                "errorType",
+                                "message"
+                            ],
+                            "properties": {
+                                "errorType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ShelfIdNotPresent",
+                                        "ShelfIdNotRemoved"
+                                    ]
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "addItemsRow": {
+        "title": "addItemsRow",
+        "description": "Add a row of items to this shelving.",
+        "forms": [
+            {
+                "op": [
+                    "invokeaction"
+                ],
+                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/addItemsRow",
+                "contentType": "application/json",
+                "response": {
+                    "contentType": "application/json"
+                }
+            }
+        ],
+        "safe": false,
+        "idempotent": false,
+        "input": {
+            "type": "object",
+            "required": [
+                "shelfId",
+                "itemsRowId"
+            ],
+           "properties": {
+               "shelfId": {
+                    "type": "integer",
+                    "minimum": 0 
+               }, 
+               "itemsRowId": {
+                    "type": "integer",
+                    "minimum": 0 
+               }
+           } 
+        },
+        "output": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "integer",
+                            "const": 1
+                        },
+                        "error": {
+                            "type": "null"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "null"
+                        },
+                        "error": {
+                            "type": "object",
+                            "required": [
+                                "errorType",
+                                "message"
+                            ],
+                            "properties": {
+                                "errorType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ShelfIdNotPresent",
+                                        "ItemsRowIdAlreadyPresent",
+                                        "ItemsRowIdNotAdded"
+                                    ]
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "removeItemsRow": {
+        "title": "removeItemsRow",
+        "description": "Remove a row of items from this shelving.",
+        "forms": [
+            {
+                "op": [
+                    "invokeaction"
+                ],
+                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/removeItemsRow",
+                "contentType": "application/json",
+                "response": {
+                    "contentType": "application/json"
+                }
+            }
+        ],
+        "safe": false,
+        "idempotent": false,
+        "input": {
+            "type": "object",
+            "required": [
+                "shelfId",
+                "itemsRowId"
+            ],
+           "properties": {
+               "shelfId": {
+                    "type": "integer",
+                    "minimum": 0 
+               }, 
+               "itemsRowId": {
+                    "type": "integer",
+                    "minimum": 0 
+               }
+           } 
+        },
+        "output": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "integer",
+                            "const": 1
+                        },
+                        "error": {
+                            "type": "null"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "null"
+                        },
+                        "error": {
+                            "type": "object",
+                            "required": [
+                                "errorType",
+                                "message"
+                            ],
+                            "properties": {
+                                "errorType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ShelfIdNotPresent",
+                                        "ItemsRowIdNotPresent",
+                                        "ItemsRowIdNotRemoved"
+                                    ]
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+  },
+  "events": {
+    "catalogItemLiftingRegistered ": {
+      "title": "catalogItemLiftingRegistered ",
+      "description": "An item has been lifted from an items row.",
+      "forms": [
+        {
+          "op": [
+            "subscribeevent"
+          ],
+          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/outbox/catalogItemLiftingRegistered",
+          "contentType": "application/json"
+        }
+      ],
+      "data": {
+        "type": "object",
+        "required": [
+          "shelfId",
+          "itemsRowId"
+        ],
+        "properties": {
+          "shelfId": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "itemsRowId": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}
