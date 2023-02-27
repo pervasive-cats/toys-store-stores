@@ -2,7 +2,7 @@
   "@context": "https://www.w3.org/2019/wot/td/v1",
   "title": "AntiTheftSystem",
   "@type": "tm:ThingModel",
-  "base": "http://localhost:8080/api/2/things/io.github.pervasivecats:antiTheftSystem-{storeId}",
+  "base": "http://localhost:8080/api/2/things/",
   "description": "The anti-theft system in its store.",
   "securityDefinitions": {
     "nosec_sc": {
@@ -12,7 +12,7 @@
   "security": "nosec_sc",
   "uriVariables": {
     "storeId": {
-      "title": "store",
+      "title": "storeId",
       "description": "The id of the store the anti-theft system is in.",
       "type": "integer",
       "minimum": 0
@@ -23,7 +23,7 @@
       "title": "storeId",
       "observable": false,
       "readOnly": true,
-      "description": "The id of the store the anti-theft system is in.",
+      "description": "The id of store the anti-theft system is in.",
       "type": "integer",
       "minimum": 0,
       "forms": [
@@ -31,92 +31,113 @@
           "op": [
             "readproperty"
           ],
-          "href": "/attributes/store"
+          "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/attributes/storeId"
         }
       ]
     }
   },
   "actions": {
-    "reset": {
-      "title": "reset",
-      "description": "Reset the anti-theft alarm.",
-      "forms": [
-        {
-          "op": [
-            "invokeaction"
-          ],
-          "href": "/messages/inbox/reset"
-        }
-      ],
-      "safe": false,
-      "idempotent": false,
-      "input": {},
-      "output": {
-        "oneOf": [
+    "raiseAlarm": {
+        "title": "raiseAlarm",
+        "description": "Raises the anti-theft alarm, which will emit a sound for a certain amount of time.",
+        "forms": [
             {
-                "type": "object",
-                "required": [
-                    "error",
-                    "result"
+                "op": [
+                    "invokeaction"
                 ],
-                "properties": {
-                    "result": {
-                        "type": "integer",
-                        "const": 1
-                    },
-                    "error": {
-                        "type": "null"
-                    }
+                "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/messages/inbox/raiseAlarm",
+                "contentType": "none/none",
+                "response": {
+                    "contentType": "application/json"
                 }
-            },
-            {
-                "type": "object",
-                "required": [
-                    "error",
-                    "result"
-                ],
-                "properties": {
-                    "result": {
-                        "type": "null"
-                    },
-                    "error": {
-                        "type": "object",
-                        "required": [
-                            "type",
-                            "message"
-                        ],
-                        "properties": {
-                            "type": {
-                                "type": "string",
-                                "enum": [
-                                    "AlarmAlreadyRaised",
-                                    "AlarmNotRaised"
-                                ]
-                            },
-                            "message": {
-                                "type": "string"
+            }
+        ],
+        "safe": false,
+        "idempotent": false,
+        "input": {},
+        "output": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "integer",
+                            "const": 1
+                        },
+                        "error": {
+                            "type": "null"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "error",
+                        "result"
+                    ],
+                    "properties": {
+                        "result": {
+                            "type": "null"
+                        },
+                        "error": {
+                            "type": "object",
+                            "required": [
+                                "type",
+                                "message"
+                            ],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "AlarmAlreadyRaised",
+                                        "AlarmNotRaised"
+                                    ]
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
                             }
                         }
                     }
                 }
-            }
-        ]
-      }
+            ]
+        }
     }
   },
   "events": {
-    "antiTheftSystemAlarmTriggered ": {
-      "title": "antiTheftSystemAlarmTriggered ",
-      "description": "The anti-theft alarm has been triggered by an item outside the store.",
+    "itemDetected": {
+      "title": "itemDetected",
+      "description": "The anti-theft alarm has detected an item exiting the store",
       "forms": [
         {
-          "op": [
-            "subscribeevent"
-          ],
-          "href": "/messages/outbox/antiTheftSystemAlarmTriggered"
+            "op": [
+                "subscribeevent"
+            ],
+            "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/messages/outbox/itemDetected",
+            "contentType": "application/json" 
         }
       ],
-      "data": {}
+      "data": {
+            "type": "object",
+            "required": [
+                "catalogItemId",
+                "itemId"
+            ],
+            "properties": {
+                "catalogItemId": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "itemId": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        }
     }
   }
 }
