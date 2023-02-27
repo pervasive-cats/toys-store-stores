@@ -5,7 +5,7 @@
  */
 
 package io.github.pervasivecats
-package stores.app.actors.commands
+package stores.application.actors.commands
 
 import stores.store.domainevents.{
   ItemReturned as ItemReturnedEvent,

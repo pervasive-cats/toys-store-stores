@@ -7,13 +7,10 @@
 package io.github.pervasivecats
 package stores.store
 
-import stores.store.valueobjects.{ShelvingGroup, StoreId}
-import stores.Validated
-import stores.store.entities.Store
+import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
-trait Repository {
+object Repository {
 
-  def findById(storeId: StoreId): Validated[Store]
+  //var map: Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId),(CatalogItem, ItemId)] = Map()
 
-  def updateLayout(store: Store, layout: List[ShelvingGroup]): Validated[Unit]
 }
