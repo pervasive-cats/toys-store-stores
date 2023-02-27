@@ -1,0 +1,122 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "AntiTheftSystem",
+  "@type": "tm:ThingModel",
+  "base": "http://localhost:8080/api/2/things/io.github.pervasivecats:antiTheftSystem-{storeId}",
+  "description": "The anti-theft system in its store.",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "uriVariables": {
+    "storeId": {
+      "title": "store",
+      "description": "The id of the store the anti-theft system is in.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "properties": {
+    "storeId": {
+      "title": "storeId",
+      "observable": false,
+      "readOnly": true,
+      "description": "The id of the store the anti-theft system is in.",
+      "type": "integer",
+      "minimum": 0,
+      "forms": [
+        {
+          "op": [
+            "readproperty"
+          ],
+          "href": "/attributes/store"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "reset": {
+      "title": "reset",
+      "description": "Reset the anti-theft alarm.",
+      "forms": [
+        {
+          "op": [
+            "invokeaction"
+          ],
+          "href": "/messages/inbox/reset"
+        }
+      ],
+      "safe": false,
+      "idempotent": false,
+      "input": {},
+      "output": {
+        "oneOf": [
+            {
+                "type": "object",
+                "required": [
+                    "error",
+                    "result"
+                ],
+                "properties": {
+                    "result": {
+                        "type": "integer",
+                        "const": 1
+                    },
+                    "error": {
+                        "type": "null"
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "required": [
+                    "error",
+                    "result"
+                ],
+                "properties": {
+                    "result": {
+                        "type": "null"
+                    },
+                    "error": {
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "message"
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "AlarmAlreadyRaised",
+                                    "AlarmNotRaised"
+                                ]
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+      }
+    }
+  },
+  "events": {
+    "antiTheftSystemAlarmTriggered ": {
+      "title": "antiTheftSystemAlarmTriggered ",
+      "description": "The anti-theft alarm has been triggered by an item outside the store.",
+      "forms": [
+        {
+          "op": [
+            "subscribeevent"
+          ],
+          "href": "/messages/outbox/antiTheftSystemAlarmTriggered"
+        }
+      ],
+      "data": {}
+    }
+  }
+}
