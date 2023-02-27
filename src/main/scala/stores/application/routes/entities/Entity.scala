@@ -7,11 +7,20 @@
 package io.github.pervasivecats
 package stores.application.routes.entities
 
+import spray.json.DefaultJsonProtocol
+import spray.json.DefaultJsonProtocol.StringJsonFormat
+import spray.json.JsArray
+import spray.json.JsNull
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+import spray.json.JsonFormat
+import spray.json.RootJsonFormat
+import spray.json.deserializationError
+import spray.json.enrichAny
+
 import stores.application.Serializers.StringJsonFormat
 import stores.{Validated, ValidationError}
-
-import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsObject, JsString, JsValue, JsonFormat, RootJsonFormat, deserializationError, enrichAny}
 
 trait Entity
 

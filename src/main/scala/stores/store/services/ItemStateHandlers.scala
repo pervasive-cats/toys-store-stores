@@ -7,9 +7,10 @@
 package io.github.pervasivecats
 package stores.store.services
 
-import stores.store.domainevents.{CatalogItemLiftingRegistered, ItemDetected, ItemInsertedInDropSystem, ItemReturned}
+import io.github.pervasivecats.stores.Validated
+import io.github.pervasivecats.stores.ValidationError
 
-import io.github.pervasivecats.stores.{Validated, ValidationError}
+import stores.store.domainevents.{CatalogItemLiftingRegistered, ItemDetected, ItemInsertedInDropSystem, ItemReturned}
 
 trait ItemStateHandlers {
 
@@ -28,7 +29,8 @@ object ItemStateHandlers extends ItemStateHandlers {
 
   override def onItemReturned(event: ItemReturned): Validated[Unit] = Right[ValidationError, Unit](())
 
-  override def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Validated[Unit] = Right[ValidationError, Unit](())
+  override def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Validated[Unit] =
+    Right[ValidationError, Unit](())
 
   override def onItemDetected(event: ItemDetected): Validated[Unit] = Right[ValidationError, Unit](())
 

@@ -7,6 +7,32 @@
 package io.github.pervasivecats
 package stores.application.actors
 
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.ForkJoinPool
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.util.*
+
+import io.github.pervasivecats.stores.application.RequestProcessingFailed
+import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.CatalogItemLifted
+import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.CatalogItemLiftingRegistered
+import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.ItemReturned
+
+import akka.actor.typed.*
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import com.rabbitmq.client.*
+import com.typesafe.config.Config
+import spray.json.DefaultJsonProtocol.StringJsonFormat
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+import spray.json.JsonFormat
+import spray.json.enrichAny
+import spray.json.enrichString
+
 import stores.Validated
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
@@ -15,24 +41,9 @@ import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultRes
 import stores.store.services.ItemStateHandlers
 import stores.application.Serializers.given
 
-import akka.actor.typed.*
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import com.rabbitmq.client.*
-import com.typesafe.config.Config
-import io.github.pervasivecats.stores.application.RequestProcessingFailed
-import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.{ItemReturned, CatalogItemLiftingRegistered, CatalogItemLifted}
-import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.{JsObject, JsString, JsValue, JsonFormat, enrichAny, enrichString}
-
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.ForkJoinPool
-import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.util.*
-
 object MessageBrokerActor {
 
-  private def publish[A <: Entity : JsonFormat](channel: Channel, response: A, replyTo: String, correlationId: String): Unit =
+  private def publish[A <: Entity: JsonFormat](channel: Channel, response: A, replyTo: String, correlationId: String): Unit =
     channel.basicPublish(
       "stores",
       replyTo,
@@ -48,16 +59,15 @@ object MessageBrokerActor {
     )
 
   private def publishValidated[A: JsonFormat](
-                                               channel: Channel,
-                                               value: Validated[A],
-                                               replyTo: String,
-                                               correlationId: String
-                                             ): Unit =
+    channel: Channel,
+    value: Validated[A],
+    replyTo: String,
+    correlationId: String
+  ): Unit =
     value.fold(
       t => publish(channel, ErrorResponseEntity(t), replyTo, correlationId),
       _ => publish(channel, ResultResponseEntity(()), replyTo, correlationId)
     )
-
 
   def apply(root: ActorRef[RootCommand], messageBrokerConfig: Config, repositoryConfig: Config): Behavior[MessageBrokerCommand] =
     Behaviors.setup[MessageBrokerCommand] { ctx =>
@@ -120,7 +130,7 @@ object MessageBrokerActor {
               Behaviors.same[MessageBrokerCommand]
             case CatalogItemLiftingRegistered(event, replyTo, correlationId) =>
               Future(ItemStateHandlers.onCatalogItemLiftingRegistered(event)).onComplete {
-                    
+
                 case Failure(_) => publish(ch, ErrorResponseEntity(RequestProcessingFailed), replyTo, correlationId)
                 case Success(value) => publishValidated(ch, value, replyTo, correlationId)
               }(ctx.executionContext)

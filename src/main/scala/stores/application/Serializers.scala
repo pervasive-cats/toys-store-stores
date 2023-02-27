@@ -7,12 +7,21 @@
 package io.github.pervasivecats
 package stores.application
 
+import eu.timepit.refined.auto.given
+import spray.json.DefaultJsonProtocol
+import spray.json.JsBoolean
+import spray.json.JsNull
+import spray.json.JsNumber
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+import spray.json.JsonFormat
+import spray.json.deserializationError
+import spray.json.enrichAny
+
 import stores.Validated
 import stores.store.domainevents.{CatalogItemLifted, CatalogItemLiftingRegistered, ItemReturned}
 import stores.store.valueobjects.*
-
-import eu.timepit.refined.auto.given
-import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, deserializationError, enrichAny}
 
 object Serializers extends DefaultJsonProtocol {
 
@@ -76,7 +85,7 @@ object Serializers extends DefaultJsonProtocol {
         (for {
           c <- CatalogItem(catalogItem.longValue)
           s <- StoreId(storeId.longValue)
-        } yield CatalogItemLifted(c,s)).fold(e => deserializationError(e.message), identity)
+        } yield CatalogItemLifted(c, s)).fold(e => deserializationError(e.message), identity)
       case _ => deserializationError(msg = "Json format is not valid")
     }
 
@@ -89,12 +98,13 @@ object Serializers extends DefaultJsonProtocol {
   given JsonFormat[ItemReturned] with {
 
     override def read(json: JsValue): ItemReturned = json.asJsObject.getFields("catalogItem", "itemId", "storeId") match {
-      case Seq(JsNumber(catalogItem), JsNumber(itemId), JsNumber(storeId)) if catalogItem.isValidLong && itemId.isValidLong && storeId.isValidLong =>
+      case Seq(JsNumber(catalogItem), JsNumber(itemId), JsNumber(storeId))
+           if catalogItem.isValidLong && itemId.isValidLong && storeId.isValidLong =>
         (for {
           c <- CatalogItem(catalogItem.longValue)
           i <- ItemId(itemId.longValue)
           s <- StoreId(storeId.longValue)
-        } yield ItemReturned(c,i,s)).fold(e => deserializationError(e.message), identity)
+        } yield ItemReturned(c, i, s)).fold(e => deserializationError(e.message), identity)
       case _ => deserializationError(msg = "Json format is not valid")
     }
 
@@ -109,15 +119,16 @@ object Serializers extends DefaultJsonProtocol {
 
     override def read(json: JsValue): CatalogItemLiftingRegistered =
       json.asJsObject.getFields("storeId", "shelvingGroupId", "shelvingId", "shelfId", "itemsRowId") match {
-        case Seq(JsNumber(storeId), JsNumber(shelvingGroupId), JsNumber(shelvingId),JsNumber(shelfId),JsNumber(itemsRowId))
-          if storeId.isValidLong && shelvingGroupId.isValidLong && shelvingId.isValidLong && shelfId.isValidLong && itemsRowId.isValidLong =>
-            (for{
-              store <- StoreId(storeId.longValue)
-              shelvingGroup <- ShelvingGroupId(shelvingGroupId.longValue)
-              shelving <- ShelvingId(shelvingId.longValue)
-              shelf <- ShelfId(shelfId.longValue)
-              itemsRow <- ItemsRowId(itemsRowId.longValue)
-            } yield CatalogItemLiftingRegistered(store, shelvingGroup, shelving, shelf, itemsRow)).fold(e => deserializationError(e.message), identity)
+        case Seq(JsNumber(storeId), JsNumber(shelvingGroupId), JsNumber(shelvingId), JsNumber(shelfId), JsNumber(itemsRowId))
+             if storeId.isValidLong && shelvingGroupId.isValidLong && shelvingId.isValidLong && shelfId.isValidLong && itemsRowId.isValidLong =>
+          (for {
+            store <- StoreId(storeId.longValue)
+            shelvingGroup <- ShelvingGroupId(shelvingGroupId.longValue)
+            shelving <- ShelvingId(shelvingId.longValue)
+            shelf <- ShelfId(shelfId.longValue)
+            itemsRow <- ItemsRowId(itemsRowId.longValue)
+          } yield CatalogItemLiftingRegistered(store, shelvingGroup, shelving, shelf, itemsRow))
+            .fold(e => deserializationError(e.message), identity)
       }
 
     override def write(obj: CatalogItemLiftingRegistered): JsValue = JsObject(

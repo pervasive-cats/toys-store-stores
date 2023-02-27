@@ -11,6 +11,6 @@ import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, Shel
 
 object Repository {
 
-  //var map: Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId),(CatalogItem, ItemId)] = Map()
+  // var map: Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId),(CatalogItem, ItemId)] = Map()
 
 }
