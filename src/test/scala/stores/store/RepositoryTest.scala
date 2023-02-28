@@ -7,20 +7,14 @@
 package io.github.pervasivecats
 package stores.store
 
-import scala.language.postfixOps
-
-import io.github.pervasivecats.stores.store.Repository.RepositoryOperationFailed
-import io.github.pervasivecats.stores.store.valueobjects.CatalogItem
-import io.github.pervasivecats.stores.store.valueobjects.ItemId
-import io.github.pervasivecats.stores.store.valueobjects.ItemsRowId
-import io.github.pervasivecats.stores.store.valueobjects.ShelfId
-import io.github.pervasivecats.stores.store.valueobjects.ShelvingGroupId
-import io.github.pervasivecats.stores.store.valueobjects.ShelvingId
-import io.github.pervasivecats.stores.store.valueobjects.StoreId
+import stores.store.Repository.RepositoryOperationFailed
+import stores.store.valueobjects.*
 
 import org.scalatest.EitherValues.given
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+
+import scala.language.postfixOps
 
 class RepositoryTest extends AnyFunSpec {
 
