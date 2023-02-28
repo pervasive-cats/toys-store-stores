@@ -7,12 +7,20 @@
 package io.github.pervasivecats
 package stores.store
 
+import scala.language.postfixOps
+
 import io.github.pervasivecats.stores.store.Repository.RepositoryOperationFailed
-import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
+import io.github.pervasivecats.stores.store.valueobjects.CatalogItem
+import io.github.pervasivecats.stores.store.valueobjects.ItemId
+import io.github.pervasivecats.stores.store.valueobjects.ItemsRowId
+import io.github.pervasivecats.stores.store.valueobjects.ShelfId
+import io.github.pervasivecats.stores.store.valueobjects.ShelvingGroupId
+import io.github.pervasivecats.stores.store.valueobjects.ShelvingId
+import io.github.pervasivecats.stores.store.valueobjects.StoreId
+
+import org.scalatest.EitherValues.given
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
-import org.scalatest.EitherValues.given
-import scala.language.postfixOps
 
 class RepositoryTest extends AnyFunSpec {
 
@@ -40,7 +48,28 @@ class RepositoryTest extends AnyFunSpec {
         val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
         val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        repository.findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).left.value shouldBe RepositoryOperationFailed
+        repository
+          .findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+          .left
+          .value shouldBe RepositoryOperationFailed
+      }
+    }
+
+    describe("if added but it was already present") {
+      it("should not be added") {
+        val repository: Repository = Repository()
+        val storeId: StoreId = StoreId(1).getOrElse(fail())
+        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
+        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
+        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
+        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
+        val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
+        val itemId: ItemId = ItemId(7).getOrElse(fail())
+        repository.putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+        repository
+          .putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+          .left
+          .value shouldBe RepositoryOperationFailed
       }
     }
   }

@@ -7,9 +7,10 @@
 package io.github.pervasivecats
 package stores.store
 
-import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
+import io.github.pervasivecats.stores.Validated
+import io.github.pervasivecats.stores.ValidationError
 
-import io.github.pervasivecats.stores.{Validated, ValidationError}
+import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 trait Repository {
 
@@ -43,7 +44,7 @@ object Repository {
 
     @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
     private var items: Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId), (CatalogItem, ItemId)] =
-      Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId), (CatalogItem, ItemId)]()
+      Map.empty[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId), (CatalogItem, ItemId)]
 
     override def findItem(
       storeId: StoreId,
@@ -69,9 +70,7 @@ object Repository {
       if (items.contains((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)))
         Left[ValidationError, Unit](RepositoryOperationFailed)
       else
-        Right[ValidationError, Unit]((items =
-          items ++ Map((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))
-        ))
+        Right[ValidationError, Unit]((items = items ++ Map((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))))
   }
 
   def apply(): Repository = RepositoryImpl()
