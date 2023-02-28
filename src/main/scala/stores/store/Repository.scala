@@ -12,7 +12,7 @@ import stores.store.valueobjects.*
 
 trait Repository {
 
-  def findItem(
+  def findStore(
     storeId: StoreId,
     shelvingGroupId: ShelvingGroupId,
     shelvingId: ShelvingId,
@@ -20,7 +20,7 @@ trait Repository {
     itemsRowId: ItemsRowId
   ): Validated[(CatalogItem, ItemId)]
 
-  def putItem(
+  def putStore(
     storeId: StoreId,
     shelvingGroupId: ShelvingGroupId,
     shelvingId: ShelvingId,
@@ -30,7 +30,7 @@ trait Repository {
     itemId: ItemId
   ): Validated[Unit]
 
-  def removeItem(
+  def removeStore(
    storeId: StoreId,
    shelvingGroupId: ShelvingGroupId,
    shelvingId: ShelvingId,
@@ -51,7 +51,7 @@ object Repository {
     private var items: Map[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId), (CatalogItem, ItemId)] =
       Map.empty[(StoreId, ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId), (CatalogItem, ItemId)]
 
-    override def findItem(
+    override def findStore(
       storeId: StoreId,
       shelvingGroupId: ShelvingGroupId,
       shelvingId: ShelvingId,
@@ -63,7 +63,7 @@ object Repository {
       else
         Left[ValidationError, (CatalogItem, ItemId)](RepositoryOperationFailed)
 
-    override def putItem(
+    override def putStore(
       storeId: StoreId,
       shelvingGroupId: ShelvingGroupId,
       shelvingId: ShelvingId,
@@ -77,7 +77,7 @@ object Repository {
       else
         Right[ValidationError, Unit]((items = items ++ Map((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))))
 
-    override def removeItem(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId, itemsRowId: ItemsRowId): Validated[Unit] =
+    override def removeStore(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId, itemsRowId: ItemsRowId): Validated[Unit] =
       if (items.contains((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)))
         Right[ValidationError, Unit]((items = items - {(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)}))
       else

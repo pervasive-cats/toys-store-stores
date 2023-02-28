@@ -29,8 +29,8 @@ class RepositoryTest extends AnyFunSpec {
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
         val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
         val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
-        repository.findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe (catalogItem, itemId)
+        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+        repository.findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe (catalogItem, itemId)
       }
     }
 
@@ -43,7 +43,7 @@ class RepositoryTest extends AnyFunSpec {
         val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
         repository
-          .findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+          .findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
           .left
           .value shouldBe RepositoryOperationFailed
       }
@@ -59,10 +59,10 @@ class RepositoryTest extends AnyFunSpec {
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
         val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
         val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
-        repository.findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe(catalogItem, itemId)
-        repository.removeItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).getOrElse(fail())
-        repository.findItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).left.value shouldBe RepositoryOperationFailed
+        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+        repository.findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe(catalogItem, itemId)
+        repository.removeStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).getOrElse(fail())
+        repository.findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).left.value shouldBe RepositoryOperationFailed
       }
     }
 
@@ -74,7 +74,7 @@ class RepositoryTest extends AnyFunSpec {
         val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
         val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        repository.removeItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).left.value shouldBe RepositoryOperationFailed
+        repository.removeStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).left.value shouldBe RepositoryOperationFailed
       }
     }
 
@@ -88,9 +88,9 @@ class RepositoryTest extends AnyFunSpec {
         val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
         val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
         val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
         repository
-          .putItem(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+          .putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
           .left
           .value shouldBe RepositoryOperationFailed
       }
