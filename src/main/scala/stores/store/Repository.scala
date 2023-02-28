@@ -7,10 +7,8 @@
 package io.github.pervasivecats
 package stores.store
 
-import io.github.pervasivecats.stores.Validated
-import io.github.pervasivecats.stores.ValidationError
-
-import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
+import stores.{Validated, ValidationError}
+import stores.store.valueobjects.*
 
 trait Repository {
 
@@ -31,6 +29,13 @@ trait Repository {
     catalogItem: CatalogItem,
     itemId: ItemId
   ): Validated[Unit]
+
+  def removeItem(
+   storeId: StoreId,
+   shelvingGroupId: ShelvingGroupId,
+   shelvingId: ShelvingId,
+   shelfId: ShelfId,
+   itemsRowId: ItemsRowId): Validated[Unit]
 }
 
 object Repository {
@@ -71,6 +76,12 @@ object Repository {
         Left[ValidationError, Unit](RepositoryOperationFailed)
       else
         Right[ValidationError, Unit]((items = items ++ Map((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))))
+
+    override def removeItem(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId, itemsRowId: ItemsRowId): Validated[Unit] =
+      if (items.contains((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)))
+        Right[ValidationError, Unit]((items = items - {(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)}))
+      else
+        Left[ValidationError, Unit](RepositoryOperationFailed)
   }
 
   def apply(): Repository = RepositoryImpl()
