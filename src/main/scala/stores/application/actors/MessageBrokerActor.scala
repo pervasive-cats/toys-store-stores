@@ -69,7 +69,7 @@ object MessageBrokerActor {
       _ => publish(channel, ResultResponseEntity(()), replyTo, correlationId)
     )
 
-  def apply(root: ActorRef[RootCommand], messageBrokerConfig: Config, repositoryConfig: Config): Behavior[MessageBrokerCommand] =
+    /*def apply(root: ActorRef[RootCommand], messageBrokerConfig: Config, repositoryConfig: Config): Behavior[MessageBrokerCommand] =
     Behaviors.setup[MessageBrokerCommand] { ctx =>
       Try {
         val factory: ConnectionFactory = ConnectionFactory()
@@ -146,6 +146,6 @@ object MessageBrokerActor {
         root ! Startup(false)
         Behaviors.stopped[MessageBrokerCommand]
       }
-    }
+    }*/
 
 }
