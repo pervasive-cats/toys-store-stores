@@ -31,11 +31,12 @@ trait Repository {
   ): Validated[Unit]
 
   def removeStore(
-   storeId: StoreId,
-   shelvingGroupId: ShelvingGroupId,
-   shelvingId: ShelvingId,
-   shelfId: ShelfId,
-   itemsRowId: ItemsRowId): Validated[Unit]
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ): Validated[Unit]
 }
 
 object Repository {
@@ -75,13 +76,20 @@ object Repository {
       if (items.contains((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)))
         Left[ValidationError, Unit](RepositoryOperationFailed)
       else
-        Right[ValidationError, Unit]((items = items ++ Map((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))))
+        items += ((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) -> (catalogItem, itemId))
+        Right[ValidationError, Unit](())
 
-    override def removeStore(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId, itemsRowId: ItemsRowId): Validated[Unit] =
+    override def removeStore(
+      storeId: StoreId,
+      shelvingGroupId: ShelvingGroupId,
+      shelvingId: ShelvingId,
+      shelfId: ShelfId,
+      itemsRowId: ItemsRowId
+    ): Validated[Unit] =
       if (items.contains((storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)))
-        Right[ValidationError, Unit]((items = items - {(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)}))
-      else
-        Left[ValidationError, Unit](RepositoryOperationFailed)
+        items -= (storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+        Right[ValidationError, Unit](())
+      else Left[ValidationError, Unit](RepositoryOperationFailed)
   }
 
   def apply(): Repository = RepositoryImpl()

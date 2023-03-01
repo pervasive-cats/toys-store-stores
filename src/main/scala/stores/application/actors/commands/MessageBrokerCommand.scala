@@ -19,6 +19,5 @@ object MessageBrokerCommand {
 
   final case class ItemReturned(event: ItemReturnedEvent) extends MessageBrokerCommand
 
-  final case class CatalogItemLiftingRegistered(event: CatalogItemLiftingRegisteredEvent)
-    extends MessageBrokerCommand
+  final case class CatalogItemLiftingRegistered(event: CatalogItemLiftingRegisteredEvent) extends MessageBrokerCommand
 }
