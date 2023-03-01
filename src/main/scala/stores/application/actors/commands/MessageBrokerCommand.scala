@@ -17,11 +17,8 @@ sealed trait MessageBrokerCommand
 
 object MessageBrokerCommand {
 
-  final case class ItemReturned(event: ItemReturnedEvent, replyTo: String, correlationId: String) extends MessageBrokerCommand
+  final case class ItemReturned(event: ItemReturnedEvent) extends MessageBrokerCommand
 
-  final case class CatalogItemLiftingRegistered(event: CatalogItemLiftingRegisteredEvent, replyTo: String, correlationId: String)
-    extends MessageBrokerCommand
-
-  final case class CatalogItemLifted(event: CatalogItemLiftedEvent, replyTo: String, correlationId: String)
+  final case class CatalogItemLiftingRegistered(event: CatalogItemLiftingRegisteredEvent)
     extends MessageBrokerCommand
 }

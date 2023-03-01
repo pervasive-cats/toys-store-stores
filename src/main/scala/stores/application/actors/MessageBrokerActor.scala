@@ -7,39 +7,29 @@
 package io.github.pervasivecats
 package stores.application.actors
 
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.ForkJoinPool
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.util.*
-
-import io.github.pervasivecats.stores.application.RequestProcessingFailed
-import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.CatalogItemLifted
-import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.CatalogItemLiftingRegistered
-import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.ItemReturned
-
-import akka.actor.typed.*
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
-import com.rabbitmq.client.*
-import com.typesafe.config.Config
-import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.JsObject
-import spray.json.JsString
-import spray.json.JsValue
-import spray.json.JsonFormat
-import spray.json.enrichAny
-import spray.json.enrichString
-
 import stores.Validated
+import stores.application.RequestProcessingFailed
+import stores.application.Serializers.given
+import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Entity
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.store.services.ItemStateHandlers
-import stores.application.Serializers.given
+
+import akka.actor.typed.*
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import com.rabbitmq.client.*
+import com.typesafe.config.Config
+import spray.json.DefaultJsonProtocol.StringJsonFormat
+import spray.json.{JsObject, JsString, JsValue, JsonFormat, enrichAny, enrichString}
+
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import java.util.concurrent.ForkJoinPool
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.util.*
 
 object MessageBrokerActor {
 
@@ -69,7 +59,8 @@ object MessageBrokerActor {
       _ => publish(channel, ResultResponseEntity(()), replyTo, correlationId)
     )
 
-    /*def apply(root: ActorRef[RootCommand], messageBrokerConfig: Config, repositoryConfig: Config): Behavior[MessageBrokerCommand] =
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
+    def apply(root: ActorRef[RootCommand], messageBrokerConfig: Config, repositoryConfig: Config): Behavior[MessageBrokerCommand] =
     Behaviors.setup[MessageBrokerCommand] { ctx =>
       Try {
         val factory: ConnectionFactory = ConnectionFactory()
@@ -117,23 +108,14 @@ object MessageBrokerActor {
         }
       }.map { (co, ch) =>
         root ! Startup(true)
-
-        given ExecutionContext = ExecutionContext.fromExecutor(ForkJoinPool.commonPool())
-
         Behaviors
           .receiveMessage[MessageBrokerCommand] {
-            case ItemReturned(event, replyTo, correlationId) =>
-              Future(ItemStateHandlers.onItemReturned(event)).onComplete {
-                case Failure(_) => publish(ch, ErrorResponseEntity(RequestProcessingFailed), replyTo, correlationId)
-                case Success(value) => publishValidated(ch, value, replyTo, correlationId)
-              }(ctx.executionContext)
+            case ItemReturned(event) =>
+              publish(ch, ResultResponseEntity(event), "items", UUID.randomUUID().toString)
+              publish(ch, ResultResponseEntity(event), "shopping", UUID.randomUUID().toString)
               Behaviors.same[MessageBrokerCommand]
-            case CatalogItemLiftingRegistered(event, replyTo, correlationId) =>
-              Future(ItemStateHandlers.onCatalogItemLiftingRegistered(event)).onComplete {
-
-                case Failure(_) => publish(ch, ErrorResponseEntity(RequestProcessingFailed), replyTo, correlationId)
-                case Success(value) => publishValidated(ch, value, replyTo, correlationId)
-              }(ctx.executionContext)
+            case CatalogItemLiftingRegistered(event) =>
+              publish(ch, ResultResponseEntity(event), "items", UUID.randomUUID().toString)
               Behaviors.same[MessageBrokerCommand]
           }
           .receiveSignal {
@@ -146,6 +128,6 @@ object MessageBrokerActor {
         root ! Startup(false)
         Behaviors.stopped[MessageBrokerCommand]
       }
-    }*/
+    }
 
 }
