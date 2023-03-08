@@ -41,7 +41,8 @@ import stores.store.services.ItemStateHandlers
 
 object MessageBrokerActor {
 
-  private def publish[A <: Entity: JsonFormat](channel: Channel, response: A, replyTo: String, correlationId: String): Unit =
+  private def publish[A <: Entity: JsonFormat](channel: Channel, response: A, replyTo: String, correlationId: String): Unit = {
+    println(response.toJson)
     channel.basicPublish(
       "stores",
       replyTo,
@@ -55,6 +56,8 @@ object MessageBrokerActor {
         .build(),
       response.toJson.compactPrint.getBytes(StandardCharsets.UTF_8)
     )
+    println("post basic publish: " + response.toJson.compactPrint)
+  }
 
   private def publishValidated[A: JsonFormat](
     channel: Channel,
@@ -85,6 +88,7 @@ object MessageBrokerActor {
         val channel: Channel = c.createChannel()
         channel.addReturnListener((r: Return) => {
           ctx.system.deadLetters[String] ! String(r.getBody, StandardCharsets.UTF_8)
+          println("returned msg: " + String(r.getBody, StandardCharsets.UTF_8))
           channel.basicPublish(
             "dead_letters",
             "dead_letters",
@@ -103,9 +107,8 @@ object MessageBrokerActor {
           channel.queueDeclare("dead_letters", true, false, false, Map.empty.asJava)
           channel.queueBind("dead_letters", "dead_letters", "")
           val couples: Seq[(String, String)] = Seq(
-            "shopping" -> "items",
-            "carts" -> "items",
-            "stores" -> "items"
+            "stores" -> "items",
+            "stores" -> "shopping"
           )
           val queueArgs: Map[String, String] = Map("x-dead-letter-exchange" -> "dead_letters")
           couples.flatMap(Seq(_, _)).distinct.foreach(e => channel.exchangeDeclare(e, BuiltinExchangeType.TOPIC, true))
@@ -122,11 +125,11 @@ object MessageBrokerActor {
         Behaviors
           .receiveMessage[MessageBrokerCommand] {
             case ItemReturned(event) =>
-              publish(ch, ResultResponseEntity(event), "items", UUID.randomUUID().toString)
-              publish(ch, ResultResponseEntity(event), "shopping", UUID.randomUUID().toString)
+              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
+              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
               Behaviors.same[MessageBrokerCommand]
             case CatalogItemLiftingRegistered(event) =>
-              publish(ch, ResultResponseEntity(event), "items", UUID.randomUUID().toString)
+              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
               Behaviors.same[MessageBrokerCommand]
           }
           .receiveSignal {

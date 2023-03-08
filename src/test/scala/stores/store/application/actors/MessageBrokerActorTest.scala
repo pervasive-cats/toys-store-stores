@@ -9,14 +9,10 @@ package stores.store.application.actors
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.Future
-import java.util.concurrent.LinkedBlockingDeque
-
+import java.util.concurrent.{BlockingQueue, Future, LinkedBlockingDeque, TimeUnit}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.MapHasAsJava
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
@@ -37,11 +33,18 @@ import org.scalatest.funspec.AnyFunSpec
 import org.testcontainers.containers.Container
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.testcontainers.utility.DockerImageName
-
+import stores.store.domainevents.{CatalogItemLifted as CatalogItemLiftedEvent, CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent, ItemReturned as ItemReturnedEvent}
 import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Response.*
+
+import stores.application.Serializers.given
+import spray.json.enrichString
+import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.ItemReturned
+import io.github.pervasivecats.stores.application.routes.entities.Entity.ResultResponseEntity
+import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
+import org.scalatest.matchers.should.Matchers.shouldBe
 
 class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with BeforeAndAfterAll {
 
@@ -62,6 +65,10 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var messageBroker: Option[ActorRef[MessageBrokerCommand]] = None
+
+  private val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
+  private val itemId: ItemId = ItemId(9231).getOrElse(fail())
+  private val storeId: StoreId = StoreId(8140).getOrElse(fail())
 
   private def forwardToQueue(queue: BlockingQueue[Map[String, String]]): DeliverCallback =
     (_: String, message: Delivery) =>
@@ -116,6 +123,16 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
     describe("after being created") {
       it("should notify its root actor about it") {
         rootActorProbe.expectMessage(10.seconds, Startup(true))
+      }
+    }
+
+    describe("after being notified that an item has been returned") {
+      it("should notify"){
+        val event: ItemReturnedEvent = ItemReturnedEvent(catalogItem, itemId, storeId)
+        messageBroker.getOrElse(fail()) ! ItemReturned(event)
+        val message: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
+        message("routingKey") shouldBe "items"
+        //message("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe event
       }
     }
   }
