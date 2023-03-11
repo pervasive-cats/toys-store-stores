@@ -7,6 +7,33 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import java.util.concurrent.*
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters.MapHasAsJava
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
+import com.dimafeng.testcontainers.GenericContainer
+import com.dimafeng.testcontainers.GenericContainer.DockerImage
+import com.dimafeng.testcontainers.scalatest.TestContainerForAll
+import com.dimafeng.testcontainers.scalatest.TestContainersForAll
+import com.rabbitmq.client.*
+import com.typesafe.config.*
+import eu.timepit.refined.auto.given
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers.*
+import org.testcontainers.containers.Container
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
+import org.testcontainers.utility.DockerImageName
+import spray.json.enrichAny
+import spray.json.enrichString
+
 import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.actors.commands.RootCommand.Startup
@@ -20,28 +47,6 @@ import stores.store.domainevents.{
 }
 import stores.store.valueobjects.*
 import stores.ValidationError
-
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
-import akka.actor.typed.ActorRef
-import com.dimafeng.testcontainers.GenericContainer.DockerImage
-import com.dimafeng.testcontainers.scalatest.{TestContainerForAll, TestContainersForAll}
-import com.dimafeng.testcontainers.GenericContainer
-import com.rabbitmq.client.*
-import com.typesafe.config.*
-import eu.timepit.refined.auto.given
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should.Matchers.*
-import org.testcontainers.containers.Container
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
-import org.testcontainers.utility.DockerImageName
-import spray.json.{enrichAny, enrichString}
-
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import java.util.concurrent.*
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.jdk.CollectionConverters.MapHasAsJava
 
 class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with BeforeAndAfterAll {
 
