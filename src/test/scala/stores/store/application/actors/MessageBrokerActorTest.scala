@@ -7,44 +7,41 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import java.util.concurrent.{BlockingQueue, Future, LinkedBlockingDeque, TimeUnit}
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters.MapHasAsJava
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.TestProbe
+import stores.application.actors.MessageBrokerActor
+import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
+import stores.application.actors.commands.RootCommand.Startup
+import stores.application.routes.entities.Response.*
+import stores.application.Serializers.given
+import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}
+import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
+import stores.store.domainevents.{
+  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent,
+  ItemReturned as ItemReturnedEvent
+}
+import stores.store.valueobjects.*
+import stores.ValidationError
+
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
-import com.dimafeng.testcontainers.GenericContainer
 import com.dimafeng.testcontainers.GenericContainer.DockerImage
-import com.dimafeng.testcontainers.JdbcDatabaseContainer.CommonParams
-import com.dimafeng.testcontainers.PostgreSQLContainer
-import com.dimafeng.testcontainers.lifecycle.and
-import com.dimafeng.testcontainers.scalatest.TestContainerForAll
-import com.dimafeng.testcontainers.scalatest.TestContainersForAll
+import com.dimafeng.testcontainers.scalatest.{TestContainerForAll, TestContainersForAll}
+import com.dimafeng.testcontainers.GenericContainer
 import com.rabbitmq.client.*
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.*
 import eu.timepit.refined.auto.given
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers.*
 import org.testcontainers.containers.Container
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import org.testcontainers.utility.DockerImageName
-import stores.store.domainevents.{CatalogItemLifted as CatalogItemLiftedEvent, CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent, ItemReturned as ItemReturnedEvent}
-import stores.application.actors.MessageBrokerActor
-import stores.application.actors.commands.RootCommand.Startup
-import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
-import stores.application.routes.entities.Response.*
+import spray.json.{enrichAny, enrichString}
 
-import stores.application.Serializers.given
-import spray.json.enrichString
-import io.github.pervasivecats.stores.application.actors.commands.MessageBrokerCommand.ItemReturned
-import io.github.pervasivecats.stores.application.routes.entities.Entity.ResultResponseEntity
-import io.github.pervasivecats.stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
-import org.scalatest.matchers.should.Matchers.shouldBe
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import java.util.concurrent.*
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with BeforeAndAfterAll {
 
@@ -60,15 +57,36 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
 
   private val testKit: ActorTestKit = ActorTestKit()
   private val rootActorProbe: TestProbe[RootCommand] = testKit.createTestProbe[RootCommand]()
-  private val itemsQueue: BlockingQueue[Map[String, String]] = LinkedBlockingDeque()
-  private val shoppingQueue: BlockingQueue[Map[String, String]] = LinkedBlockingDeque()
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var messageBroker: Option[ActorRef[MessageBrokerCommand]] = None
 
-  private val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
-  private val itemId: ItemId = ItemId(9231).getOrElse(fail())
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+  private var maybeChannel: Option[Channel] = None
+
+  private val itemsQueue: BlockingQueue[Map[String, String]] = LinkedBlockingDeque()
+  private val shoppingQueue: BlockingQueue[Map[String, String]] = LinkedBlockingDeque()
+
   private val storeId: StoreId = StoreId(8140).getOrElse(fail())
+
+  private val itemReturnedEvent: ItemReturnedEvent = ItemReturnedEvent(
+    CatalogItem(9000).getOrElse(fail()),
+    ItemId(9231).getOrElse(fail()),
+    storeId
+  )
+
+  private val catalogItemLiftingEvent: CatalogItemLiftingRegisteredEvent = CatalogItemLiftingRegisteredEvent(
+    storeId,
+    ShelvingGroupId(0).getOrElse(fail()),
+    ShelvingId(0).getOrElse(fail()),
+    ShelfId(0).getOrElse(fail()),
+    ItemsRowId(0).getOrElse(fail())
+  )
+
+  case object TestError extends ValidationError {
+
+    override val message: String = "Test error"
+  }
 
   private def forwardToQueue(queue: BlockingQueue[Map[String, String]]): DeliverCallback =
     (_: String, message: Delivery) =>
@@ -115,6 +133,7 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
       .foreach((e, q, r) => channel.queueBind(q, e, r))
     channel.basicConsume("stores_items", true, forwardToQueue(itemsQueue), (_: String) => {})
     channel.basicConsume("stores_shopping", true, forwardToQueue(shoppingQueue), (_: String) => {})
+    maybeChannel = Some(channel)
   }
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
@@ -126,15 +145,139 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+    var maybeShoppingCorrelationId: Option[String] = None
+
+    @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+    var maybeItemsCorrelationId: Option[String] = None
+
     describe("after being notified that an item has been returned") {
-      it("should notify"){
-        val event: ItemReturnedEvent = ItemReturnedEvent(catalogItem, itemId, storeId)
-        messageBroker.getOrElse(fail()) ! ItemReturned(event)
-        val message: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
-        message("routingKey") shouldBe "items"
-        //message("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe event
+      it("should notify the message broker") {
+        messageBroker.getOrElse(fail()) ! ItemReturned(itemReturnedEvent)
+        val shoppingMessage: Map[String, String] = shoppingQueue.poll(10, TimeUnit.SECONDS)
+        shoppingMessage("exchange") shouldBe "stores"
+        shoppingMessage("routingKey") shouldBe "shopping"
+        shoppingMessage("contentType") shouldBe "application/json"
+        shoppingMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        shoppingMessage("replyTo") shouldBe "stores"
+        shoppingMessage("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe itemReturnedEvent
+        maybeShoppingCorrelationId = Some(shoppingMessage("correlationId"))
+        val itemsMessage: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
+        itemsMessage("exchange") shouldBe "stores"
+        itemsMessage("routingKey") shouldBe "items"
+        itemsMessage("contentType") shouldBe "application/json"
+        itemsMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        itemsMessage("replyTo") shouldBe "stores"
+        itemsMessage("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe itemReturnedEvent
+        maybeItemsCorrelationId = Some(itemsMessage("correlationId"))
+      }
+    }
+
+    describe("after receiving an error reply from the message broker for an item returned event") {
+      it("should resend the message") {
+        val channel: Channel = maybeChannel.getOrElse(fail())
+        channel.basicPublish(
+          "shopping",
+          "stores",
+          AMQP
+            .BasicProperties
+            .Builder()
+            .contentType("application/json")
+            .deliveryMode(2)
+            .priority(0)
+            .correlationId(maybeShoppingCorrelationId.getOrElse(fail()))
+            .build(),
+          ErrorResponseEntity(TestError).toJson.compactPrint.getBytes(StandardCharsets.UTF_8)
+        )
+        val shoppingMessage: Map[String, String] = shoppingQueue.poll(10, TimeUnit.SECONDS)
+        shoppingMessage("exchange") shouldBe "stores"
+        shoppingMessage("routingKey") shouldBe "shopping"
+        shoppingMessage("contentType") shouldBe "application/json"
+        shoppingMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        shoppingMessage("replyTo") shouldBe "stores"
+        shoppingMessage("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe itemReturnedEvent
+        channel.basicPublish(
+          "items",
+          "stores",
+          AMQP
+            .BasicProperties
+            .Builder()
+            .contentType("application/json")
+            .deliveryMode(2)
+            .priority(0)
+            .correlationId(maybeShoppingCorrelationId.getOrElse(fail()))
+            .build(),
+          ErrorResponseEntity(TestError).toJson.compactPrint.getBytes(StandardCharsets.UTF_8)
+        )
+        val itemsMessage: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
+        itemsMessage("exchange") shouldBe "stores"
+        itemsMessage("routingKey") shouldBe "items"
+        itemsMessage("contentType") shouldBe "application/json"
+        itemsMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        itemsMessage("replyTo") shouldBe "stores"
+        itemsMessage("body").parseJson.convertTo[ResultResponseEntity[ItemReturnedEvent]].result shouldBe itemReturnedEvent
+      }
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+    var maybeCorrelationId: Option[String] = None
+
+    describe("after being notified that a catalog item has been lifted") {
+      it("should notify the message broker") {
+        messageBroker.getOrElse(fail()) ! CatalogItemLiftingRegistered(catalogItemLiftingEvent)
+        val itemsMessage: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
+        itemsMessage("exchange") shouldBe "stores"
+        itemsMessage("routingKey") shouldBe "items"
+        itemsMessage("contentType") shouldBe "application/json"
+        itemsMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        itemsMessage("replyTo") shouldBe "stores"
+        itemsMessage("body")
+          .parseJson
+          .convertTo[ResultResponseEntity[CatalogItemLiftingRegisteredEvent]]
+          .result shouldBe catalogItemLiftingEvent
+        maybeCorrelationId = Some(itemsMessage("correlationId"))
+      }
+    }
+
+    describe("after receiving an error reply from the message broker") {
+      it("should resend the message") {
+        val channel: Channel = maybeChannel.getOrElse(fail())
+        channel.basicPublish(
+          "items",
+          "stores",
+          AMQP
+            .BasicProperties
+            .Builder()
+            .contentType("application/json")
+            .deliveryMode(2)
+            .priority(0)
+            .correlationId(maybeCorrelationId.getOrElse(fail()))
+            .build(),
+          ErrorResponseEntity(TestError).toJson.compactPrint.getBytes(StandardCharsets.UTF_8)
+        )
+        val itemsMessage: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
+        itemsMessage("exchange") shouldBe "stores"
+        itemsMessage("routingKey") shouldBe "items"
+        itemsMessage("contentType") shouldBe "application/json"
+        itemsMessage(
+          "correlationId"
+        ) should fullyMatch regex "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        itemsMessage("replyTo") shouldBe "stores"
+        itemsMessage("body")
+          .parseJson
+          .convertTo[ResultResponseEntity[CatalogItemLiftingRegisteredEvent]]
+          .result shouldBe catalogItemLiftingEvent
       }
     }
   }
-
 }

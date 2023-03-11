@@ -90,6 +90,7 @@ object Serializers extends DefaultJsonProtocol {
     }
 
     override def write(obj: CatalogItemLifted): JsValue = JsObject(
+      "type" -> "CatalogItemLifted".toJson,
       "catalogItem" -> obj.catalogItem.toJson,
       "storeId" -> obj.storeId.toJson
     )
@@ -109,6 +110,7 @@ object Serializers extends DefaultJsonProtocol {
     }
 
     override def write(obj: ItemReturned): JsValue = JsObject(
+      "type" -> "ItemReturned".toJson,
       "catalogItem" -> obj.catalogItem.toJson,
       "itemId" -> obj.itemId.toJson,
       "storeId" -> obj.storeId.toJson
@@ -129,9 +131,11 @@ object Serializers extends DefaultJsonProtocol {
             itemsRow <- ItemsRowId(itemsRowId.longValue)
           } yield CatalogItemLiftingRegistered(store, shelvingGroup, shelving, shelf, itemsRow))
             .fold(e => deserializationError(e.message), identity)
+        case _ => deserializationError(msg = "Json format is not valid")
       }
 
     override def write(obj: CatalogItemLiftingRegistered): JsValue = JsObject(
+      "type" -> "CatalogItemLiftingRegistered".toJson,
       "storeId" -> obj.storeId.toJson,
       "shelvingGroupId" -> obj.shelvingGroupId.toJson,
       "shelvingId" -> obj.shelvingId.toJson,

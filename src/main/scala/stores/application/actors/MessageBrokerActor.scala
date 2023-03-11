@@ -10,25 +10,17 @@ package stores.application.actors
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ForkJoinPool
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.*
-
 import akka.actor.typed.*
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.*
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.JsObject
-import spray.json.JsString
-import spray.json.JsValue
-import spray.json.JsonFormat
-import spray.json.enrichAny
-import spray.json.enrichString
-
+import spray.json.{enrichAny, enrichString, JsNull, JsObject, JsonFormat, JsString, JsValue}
 import stores.Validated
 import stores.application.RequestProcessingFailed
 import stores.application.Serializers.given
@@ -38,37 +30,72 @@ import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Entity
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.store.services.ItemStateHandlers
+import stores.store.domainevents.{
+  ItemReturned as ItemReturnedEvent,
+  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent
+}
 
 object MessageBrokerActor {
 
-  private def publish[A <: Entity: JsonFormat](channel: Channel, response: A, replyTo: String, correlationId: String): Unit = {
-    println(response.toJson)
+  private def publish[A <: Entity: JsonFormat](channel: Channel, response: A, routingKey: String, correlationId: String): Unit =
     channel.basicPublish(
       "stores",
-      replyTo,
+      routingKey,
       AMQP
         .BasicProperties
         .Builder()
         .contentType("application/json")
         .deliveryMode(2)
         .priority(0)
+        .replyTo("stores")
         .correlationId(correlationId)
         .build(),
       response.toJson.compactPrint.getBytes(StandardCharsets.UTF_8)
     )
-    println("post basic publish: " + response.toJson.compactPrint)
+
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
+  private def publishItemReturned(ch: Channel, e: ItemReturnedEvent, routingKey: String): Unit = {
+    val correlationId: UUID = UUID.randomUUID()
+    itemReturnedRequests += (correlationId -> e)
+    publish(ch, ResultResponseEntity(e), routingKey, correlationId.toString)
   }
 
-  private def publishValidated[A: JsonFormat](
+  private def consume(
+    queue: String,
     channel: Channel,
-    value: Validated[A],
-    replyTo: String,
-    correlationId: String
+    ctx: ActorContext[MessageBrokerCommand]
   ): Unit =
-    value.fold(
-      t => publish(channel, ErrorResponseEntity(t), replyTo, correlationId),
-      _ => publish(channel, ResultResponseEntity(()), replyTo, correlationId)
+    channel.basicConsume(
+      queue,
+      true,
+      (_: String, message: Delivery) => {
+        val body: String = String(message.getBody, StandardCharsets.UTF_8)
+        body.parseJson.asJsObject.getFields("result", "error") match {
+          case Seq(JsObject(_), JsNull) => ()
+          case Seq(JsNull, JsObject(_)) =>
+            (
+              itemReturnedRequests.get(UUID.fromString(message.getProperties.getCorrelationId)),
+              catalogItemLiftingRequests.get(UUID.fromString(message.getProperties.getCorrelationId))
+            ) match {
+              case (Some(e), None) => publishItemReturned(channel, e, message.getEnvelope.getExchange)
+              case (None, Some(e)) => ctx.self ! CatalogItemLiftingRegistered(e)
+              case _ =>
+                ctx.system.deadLetters[String] ! body
+                channel.basicReject(message.getEnvelope.getDeliveryTag, false)
+            }
+          case _ =>
+            ctx.system.deadLetters[String] ! body
+            channel.basicReject(message.getEnvelope.getDeliveryTag, false)
+        }
+      },
+      (_: String) => {}
     )
+
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+  private var itemReturnedRequests: Map[UUID, ItemReturnedEvent] = Map.empty
+
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+  private var catalogItemLiftingRequests: Map[UUID, CatalogItemLiftingRegisteredEvent] = Map.empty
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def apply(
@@ -88,7 +115,6 @@ object MessageBrokerActor {
         val channel: Channel = c.createChannel()
         channel.addReturnListener((r: Return) => {
           ctx.system.deadLetters[String] ! String(r.getBody, StandardCharsets.UTF_8)
-          println("returned msg: " + String(r.getBody, StandardCharsets.UTF_8))
           channel.basicPublish(
             "dead_letters",
             "dead_letters",
@@ -118,18 +144,22 @@ object MessageBrokerActor {
           couples
             .flatMap((b1, b2) => Seq((b1, b1 + "_" + b2, b2), (b2, b2 + "_" + b1, b1)))
             .foreach((e, q, r) => channel.queueBind(q, e, r))
+          consume("items_stores", channel, ctx)
+          consume("shopping_stores", channel, ctx)
           (c, channel)
         }
       }.map { (co, ch) =>
         root ! Startup(true)
         Behaviors
           .receiveMessage[MessageBrokerCommand] {
-            case ItemReturned(event) =>
-              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
-              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
+            case ItemReturned(e) =>
+              publishItemReturned(ch, e, routingKey = "items")
+              publishItemReturned(ch, e, routingKey = "shopping")
               Behaviors.same[MessageBrokerCommand]
-            case CatalogItemLiftingRegistered(event) =>
-              publish(ch, ResultResponseEntity(event), "stores", UUID.randomUUID().toString)
+            case CatalogItemLiftingRegistered(e) =>
+              val itemsCorrelationId: UUID = UUID.randomUUID()
+              catalogItemLiftingRequests += (itemsCorrelationId -> e)
+              publish(ch, ResultResponseEntity(e), routingKey = "items", itemsCorrelationId.toString)
               Behaviors.same[MessageBrokerCommand]
           }
           .receiveSignal {
@@ -143,5 +173,4 @@ object MessageBrokerActor {
         Behaviors.stopped[MessageBrokerCommand]
       }
     }
-
 }
