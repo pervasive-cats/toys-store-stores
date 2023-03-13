@@ -28,4 +28,6 @@ object Dependencies {
   lazy val postgresql: ModuleID = "org.postgresql" % "postgresql" % "42.5.3"
 
   lazy val testContainersPostgresql: ModuleID = "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.12" % Test
+
+  lazy val ditto: ModuleID = "org.eclipse.ditto" % "ditto-client" % "3.1.1"
 }
