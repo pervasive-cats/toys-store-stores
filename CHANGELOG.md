@@ -1,3 +1,24 @@
+# [1.0.0-beta.3](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2023-03-12)
+
+
+### Bug Fixes
+
+* fix implementation of broker actor ([07e8396](https://github.com/pervasive-cats/toys-store-stores/commit/07e8396f1735d98e1c08d94497990472bfc11547))
+* improved message broker actor ([6b87015](https://github.com/pervasive-cats/toys-store-stores/commit/6b870150f94eb14485b206d0512b758a7652efee))
+
+
+### Features
+
+* add domain events in serializer ([048558d](https://github.com/pervasive-cats/toys-store-stores/commit/048558d5170efd537b058a3ad407b50a4cc12c9a))
+* add domain events in serializer ([84a1984](https://github.com/pervasive-cats/toys-store-stores/commit/84a19844e7046b07a0eccfd6b9cde07ba5708ceb))
+* add message broker actor and command ([e58d2ff](https://github.com/pervasive-cats/toys-store-stores/commit/e58d2ff9656a99c7ebc38e824d1bbb098ce95093))
+* add message broker test implementation ([9675b2d](https://github.com/pervasive-cats/toys-store-stores/commit/9675b2d98eeee3de4794bb1ee872928489e84a21))
+* add remove to repository and test ([03ce9a2](https://github.com/pervasive-cats/toys-store-stores/commit/03ce9a25217b13a981777d818c0cd0b2d4707404))
+* add repository and test ([72550f9](https://github.com/pervasive-cats/toys-store-stores/commit/72550f92bb84039d8d0eb183f5fb686018a701a0))
+* add serializers for value objects ([03030ba](https://github.com/pervasive-cats/toys-store-stores/commit/03030ba4aff981d99d0b4efd653ca9e1e8349ab2))
+* improve repository test ([3475d4c](https://github.com/pervasive-cats/toys-store-stores/commit/3475d4c74c25153faa51d9856c026363f8af4643))
+* improved message actor broker test ([9355928](https://github.com/pervasive-cats/toys-store-stores/commit/9355928a31c917bf456f1f698822df8a24d14290))
+
 # [1.0.0-beta.2](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-02-22)
 
 
