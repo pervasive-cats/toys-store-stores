@@ -19,10 +19,9 @@ class ItemDetectedTest extends AnyFunSpec {
       it("should be contain them") {
         val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
         val itemId: ItemId = ItemId(9231).getOrElse(fail())
-        val item: Item = Item(catalogItem, itemId)
         val storeId: StoreId = StoreId(8140).getOrElse(fail())
-        val itemDetected: ItemDetected = ItemDetected(item, catalogItem, storeId)
-        itemDetected.item shouldBe item
+        val itemDetected: ItemDetected = ItemDetected(itemId, catalogItem, storeId)
+        itemDetected.itemId shouldBe itemId
         itemDetected.catalogItem shouldBe catalogItem
         itemDetected.storeId shouldBe storeId
       }
