@@ -30,7 +30,6 @@ import spray.json.JsonFormat
 import spray.json.enrichAny
 import spray.json.enrichString
 
-import stores.Validated
 import stores.application.RequestProcessingFailed
 import stores.application.Serializers.given
 import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}

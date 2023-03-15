@@ -15,6 +15,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.MapHasAsJava
 
+import io.github.pervasivecats.ValidationError
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
@@ -46,7 +48,6 @@ import stores.store.domainevents.{
   ItemReturned as ItemReturnedEvent
 }
 import stores.store.valueobjects.*
-import stores.ValidationError
 
 class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with BeforeAndAfterAll {
 

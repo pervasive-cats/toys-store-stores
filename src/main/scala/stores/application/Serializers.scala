@@ -19,7 +19,6 @@ import spray.json.JsonFormat
 import spray.json.deserializationError
 import spray.json.enrichAny
 
-import stores.Validated
 import stores.store.domainevents.{CatalogItemLifted, CatalogItemLiftingRegistered, ItemReturned}
 import stores.store.valueobjects.*
 

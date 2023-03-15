@@ -7,6 +7,8 @@
 package io.github.pervasivecats
 package stores.application.routes.entities
 
+import io.github.pervasivecats.ValidationError
+
 import spray.json.DefaultJsonProtocol
 import spray.json.DefaultJsonProtocol.StringJsonFormat
 import spray.json.JsArray
@@ -20,7 +22,6 @@ import spray.json.deserializationError
 import spray.json.enrichAny
 
 import stores.application.Serializers.StringJsonFormat
-import stores.{Validated, ValidationError}
 
 trait Entity
 

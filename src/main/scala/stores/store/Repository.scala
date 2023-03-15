@@ -7,7 +7,6 @@
 package io.github.pervasivecats
 package stores.store
 
-import stores.{Validated, ValidationError}
 import stores.store.valueobjects.*
 
 trait Repository {
@@ -44,6 +43,11 @@ object Repository {
   case object RepositoryOperationFailed extends ValidationError {
 
     override val message: String = "The operation on the repository was not correctly performed"
+  }
+
+  case object StoreNotFound extends ValidationError {
+
+    override val message: String = "The queried store was not found"
   }
 
   private class RepositoryImpl() extends Repository {

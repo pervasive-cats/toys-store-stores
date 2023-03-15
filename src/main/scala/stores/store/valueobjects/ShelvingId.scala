@@ -7,9 +7,11 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
+import io.github.pervasivecats.ValidationError
+
 import eu.timepit.refined.api.RefType.applyRef
 
-import stores.{Id, Validated, ValidationError}
+import stores.Id
 
 trait ShelvingId {
 

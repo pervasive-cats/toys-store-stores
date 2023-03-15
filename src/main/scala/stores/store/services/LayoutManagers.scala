@@ -8,7 +8,6 @@ package io.github.pervasivecats
 package stores.store.services
 
 import stores.store.valueobjects.{CatalogItem, Item, StoreId}
-import stores.Validated
 
 trait LayoutManagers {
 

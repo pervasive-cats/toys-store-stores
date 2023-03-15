@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.valueobjects
 
-import io.github.pervasivecats.stores.ValidationError
+import io.github.pervasivecats.ValidationError
 
 import eu.timepit.refined.auto.given
 import org.scalatest.EitherValues.given

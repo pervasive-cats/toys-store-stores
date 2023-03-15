@@ -7,9 +7,7 @@
 package io.github.pervasivecats
 package stores.application.routes.entities
 
-import io.github.pervasivecats.stores.store.entities.Store
-
-import stores.Validated
+import stores.store.entities.Store
 
 sealed trait Response[A] {
 

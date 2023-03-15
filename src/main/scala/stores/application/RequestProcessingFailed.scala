@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.application
 
-import stores.ValidationError
+import io.github.pervasivecats.ValidationError
 
 case object RequestProcessingFailed extends ValidationError {
 
