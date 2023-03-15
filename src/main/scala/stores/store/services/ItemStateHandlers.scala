@@ -7,31 +7,44 @@
 package io.github.pervasivecats
 package stores.store.services
 
-import io.github.pervasivecats.stores.Validated
-import io.github.pervasivecats.stores.ValidationError
+import io.github.pervasivecats.stores.application.actors.commands.DittoCommand.RaiseAlarm
 
+import akka.actor.typed.ActorRef
+
+import stores.application.actors.commands.MessageBrokerCommand
 import stores.store.domainevents.{CatalogItemLiftingRegistered, ItemDetected, ItemInsertedInDropSystem, ItemReturned}
+import stores.application.actors.commands.DittoCommand
 
 trait ItemStateHandlers {
 
-  def onItemInserted(event: ItemInsertedInDropSystem): Validated[Unit]
+  def onItemInserted(event: ItemInsertedInDropSystem): Unit
 
-  def onItemReturned(event: ItemReturned): Validated[Unit]
+  def onItemReturned(event: ItemReturned): Unit
 
-  def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Validated[Unit]
+  def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Unit
 
-  def onItemDetected(event: ItemDetected): Validated[Unit]
+  def onItemDetected(event: ItemDetected): Unit
 }
 
-object ItemStateHandlers extends ItemStateHandlers {
+object ItemStateHandlers {
 
-  override def onItemInserted(event: ItemInsertedInDropSystem): Validated[Unit] = Right[ValidationError, Unit](())
+  private class ItemStateHandlersImpl(messageBrokerActor: ActorRef[MessageBrokerCommand], dittoActor: ActorRef[DittoCommand])
+    extends ItemStateHandlers {
 
-  override def onItemReturned(event: ItemReturned): Validated[Unit] = Right[ValidationError, Unit](())
+    override def onItemReturned(event: ItemReturned): Unit = println("[event] onItemReturned")
 
-  override def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Validated[Unit] =
-    Right[ValidationError, Unit](())
+    override def onItemInserted(event: ItemInsertedInDropSystem): Unit = println("[event] onItemInserted")
 
-  override def onItemDetected(event: ItemDetected): Validated[Unit] = Right[ValidationError, Unit](())
+    override def onCatalogItemLiftingRegistered(event: CatalogItemLiftingRegistered): Unit = println(
+      "[event] onCatalogItemLiftingRegistered"
+    )
 
+    override def onItemDetected(event: ItemDetected): Unit = {
+      println("[event] Item detected by anti-theft system.")
+      dittoActor ! RaiseAlarm(event.storeId)
+    }
+  }
+
+  def apply(messageBrokerActor: ActorRef[MessageBrokerCommand], dittoActor: ActorRef[DittoCommand]): ItemStateHandlers =
+    ItemStateHandlersImpl(messageBrokerActor, dittoActor)
 }
