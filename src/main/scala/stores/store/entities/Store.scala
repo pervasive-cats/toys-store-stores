@@ -15,3 +15,11 @@ trait Store {
 
   val layout: List[ShelvingGroup]
 }
+
+object Store {
+
+  private case class StoreImpl(storeId: StoreId, layout: List[ShelvingGroup]) extends Store
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments", "scalafix:DisableSyntax.defaultArgs"))
+  def apply(storeId: StoreId, layout: List[ShelvingGroup] = List.empty): Store = StoreImpl(storeId, layout)
+}
