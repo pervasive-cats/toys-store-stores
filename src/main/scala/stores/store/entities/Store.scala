@@ -7,11 +7,28 @@
 package io.github.pervasivecats
 package stores.store.entities
 
-import stores.store.valueobjects.{ShelvingGroup, StoreId}
+import AnyOps.*
+import stores.store.valueobjects.{ShelvingGroup, ShelvingGroupId, StoreId}
 
 trait Store {
 
   val storeId: StoreId
 
   val layout: List[ShelvingGroup]
+}
+
+object Store {
+
+  final private case class StoreImpl(storeId: StoreId, layout: List[ShelvingGroup]) extends Store
+
+  given StoreOps[Store] with {
+
+    override def addShelvingGroup(store: Store, shelvingGroup: ShelvingGroup): Store = StoreImpl(store.storeId, store.layout ++ List[ShelvingGroup](shelvingGroup))
+
+    override def removeShelvingGroup(store: Store, shelvingGroupId: ShelvingGroupId): Store = StoreImpl(store.storeId, store.layout.filter(_.shelvingGroupId !== shelvingGroupId))
+
+    override def updateShelvingGroup(store: Store, shelvingGroup: ShelvingGroup): Store = StoreImpl(store.storeId, store.layout.filter(_.shelvingGroupId !== shelvingGroup.shelvingGroupId) ++ List[ShelvingGroup](shelvingGroup))
+  }
+
+  def apply(storeId: StoreId, layout: List[ShelvingGroup]): Store = StoreImpl(storeId, layout)
 }
