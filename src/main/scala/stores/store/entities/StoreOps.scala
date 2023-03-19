@@ -25,8 +25,10 @@ object StoreOps {
 
     def addShelvingGroup(shelvingGroup: ShelvingGroup): Store = implicitly[StoreOps[A]].addShelvingGroup(store, shelvingGroup)
 
-    def removeShelvingGroup(shelvingGroupId: ShelvingGroupId): Store = implicitly[StoreOps[A]].removeShelvingGroup(store, shelvingGroupId)
+    def removeShelvingGroup(shelvingGroupId: ShelvingGroupId): Store =
+      implicitly[StoreOps[A]].removeShelvingGroup(store, shelvingGroupId)
 
-    def updateShelvingGroup(shelvingGroup: ShelvingGroup): Store = implicitly[StoreOps[A]].updateShelvingGroup(store, shelvingGroup)
+    def updateShelvingGroup(shelvingGroup: ShelvingGroup): Store =
+      implicitly[StoreOps[A]].updateShelvingGroup(store, shelvingGroup)
   }
 }

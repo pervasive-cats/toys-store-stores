@@ -18,7 +18,7 @@ trait ShelvingGroup {
 }
 
 object ShelvingGroup {
-  
+
   final private case class ShelvingGroupImpl(shelvingGroupId: ShelvingGroupId, shelvings: List[Shelving]) extends ShelvingGroup
 
   given ShelvingGroupOps[ShelvingGroup] with {
@@ -35,5 +35,6 @@ object ShelvingGroup {
         .addShelving(shelving)
   }
 
-  def apply(shelvingGroupId: ShelvingGroupId, shelvings: List[Shelving]): ShelvingGroup = ShelvingGroupImpl(shelvingGroupId, shelvings)
+  def apply(shelvingGroupId: ShelvingGroupId, shelvings: List[Shelving]): ShelvingGroup =
+    ShelvingGroupImpl(shelvingGroupId, shelvings)
 }

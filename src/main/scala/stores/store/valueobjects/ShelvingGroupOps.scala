@@ -11,19 +11,21 @@ trait ShelvingGroupOps[A <: ShelvingGroup] {
 
   def addShelving(shelvingGroup: ShelvingGroup, shelving: Shelving): ShelvingGroup
 
-  def removeShelving(shelvingGroup: ShelvingGroup,shelvingId: ShelvingId): ShelvingGroup
+  def removeShelving(shelvingGroup: ShelvingGroup, shelvingId: ShelvingId): ShelvingGroup
 
-  def updateShelving(shelvingGroup: ShelvingGroup,shelving: Shelving): ShelvingGroup
+  def updateShelving(shelvingGroup: ShelvingGroup, shelving: Shelving): ShelvingGroup
 }
 
-object ShelvingGroupOps{
+object ShelvingGroupOps {
 
-  extension [A <: ShelvingGroup: ShelvingGroupOps](shelvingGroup: A){
+  extension [A <: ShelvingGroup: ShelvingGroupOps](shelvingGroup: A) {
 
     def addShelving(shelving: Shelving): ShelvingGroup = implicitly[ShelvingGroupOps[A]].addShelving(shelvingGroup, shelving)
 
-    def removeShelving(shelvingId: ShelvingId): ShelvingGroup = implicitly[ShelvingGroupOps[A]].removeShelving(shelvingGroup, shelvingId)
+    def removeShelving(shelvingId: ShelvingId): ShelvingGroup =
+      implicitly[ShelvingGroupOps[A]].removeShelving(shelvingGroup, shelvingId)
 
-    def updateShelving(shelving: Shelving): ShelvingGroup = implicitly[ShelvingGroupOps[A]].updateShelving(shelvingGroup, shelving)
+    def updateShelving(shelving: Shelving): ShelvingGroup =
+      implicitly[ShelvingGroupOps[A]].updateShelving(shelvingGroup, shelving)
   }
 }

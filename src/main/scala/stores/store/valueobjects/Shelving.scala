@@ -20,7 +20,7 @@ trait Shelving {
 object Shelving {
 
   private case class ShelvingImpl(shelvingId: ShelvingId, shelves: List[Shelf]) extends Shelving
-  
+
   given ShelvingOps[Shelving] with {
 
     override def addShelf(shelving: Shelving, shelf: Shelf): Shelving =

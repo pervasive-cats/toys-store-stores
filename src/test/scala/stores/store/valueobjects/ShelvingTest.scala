@@ -15,17 +15,17 @@ class ShelvingTest extends AnyFunSpec {
   val shelfId: ShelfId = ShelfId(5).getOrElse(fail())
   val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
 
-  describe("A Shelving"){
-    describe("when created with a shelving id and a list of shelf"){
-      it("should contain them"){
+  describe("A Shelving") {
+    describe("when created with a shelving id and a list of shelf") {
+      it("should contain them") {
         val shelving: Shelving = Shelving(shelvingId, List[Shelf](shelf))
         shelving.shelvingId shouldBe shelvingId
         shelving.shelves shouldBe List[Shelf](shelf)
       }
     }
 
-    describe("when add a shelf"){
-      it("should be added"){
+    describe("when add a shelf") {
+      it("should be added") {
         val shelving: Shelving = Shelving(shelvingId, List[Shelf](shelf))
 
         val shelfIdB: ShelfId = ShelfId(15).getOrElse(fail())
@@ -37,8 +37,8 @@ class ShelvingTest extends AnyFunSpec {
       }
     }
 
-    describe("when remove a shelf"){
-      it("should be removed"){
+    describe("when remove a shelf") {
+      it("should be removed") {
         val shelving: Shelving = Shelving(shelvingId, List[Shelf](shelf))
 
         val shelfIdB: ShelfId = ShelfId(15).getOrElse(fail())
@@ -52,8 +52,8 @@ class ShelvingTest extends AnyFunSpec {
       }
     }
 
-    describe("when update a shelf"){
-      it("should be updated"){
+    describe("when update a shelf") {
+      it("should be updated") {
         val shelving: Shelving = Shelving(shelvingId, List[Shelf](shelf))
 
         val itemsRowIdB: ItemsRowId = ItemsRowId(12).getOrElse(fail())
@@ -65,7 +65,5 @@ class ShelvingTest extends AnyFunSpec {
         shelvingB.shelves shouldBe List[Shelf](shelfB)
       }
     }
-
-
   }
 }

@@ -14,8 +14,8 @@ trait ItemsRowOps[A <: ItemsRow] {
 
 object ItemsRowOps {
 
-  extension [A <: ItemsRow: ItemsRowOps](itemsRow: A){
-    
+  extension [A <: ItemsRow: ItemsRowOps](itemsRow: A) {
+
     def updated(catalogItem: CatalogItem, count: Count) = implicitly[ItemsRowOps[A]].updated(itemsRow, catalogItem, count)
   }
 }

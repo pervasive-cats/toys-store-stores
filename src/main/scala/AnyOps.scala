@@ -6,7 +6,8 @@
 
 package io.github.pervasivecats
 
-import scala.annotation.{targetName, unused}
+import scala.annotation.targetName
+import scala.annotation.unused
 
 object AnyOps {
 

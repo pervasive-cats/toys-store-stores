@@ -3,9 +3,10 @@ package stores.store.valueobjects
 
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
+
 import stores.store.valueobjects.ShelvingGroupOps.*
 
-class ShelvingGroupTest extends AnyFunSpec{
+class ShelvingGroupTest extends AnyFunSpec {
 
   val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(1000).getOrElse(fail())
   val shelvingId: ShelvingId = ShelvingId(1).getOrElse(fail())
@@ -17,17 +18,17 @@ class ShelvingGroupTest extends AnyFunSpec{
   val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
   val shelving: Shelving = Shelving(shelvingId, List[Shelf](shelf))
 
-  describe("A Shelving Group"){
-    describe("when created with a shelving group id and a list of shelvings"){
-      it("should contain them"){
+  describe("A Shelving Group") {
+    describe("when created with a shelving group id and a list of shelvings") {
+      it("should contain them") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, List[Shelving](shelving))
         shelvingGroup.shelvingGroupId shouldBe shelvingGroupId
         shelvingGroup.shelvings shouldBe List[Shelving](shelving)
       }
     }
 
-    describe("when add a shelving"){
-      it("should be added"){
+    describe("when add a shelving") {
+      it("should be added") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, List[Shelving](shelving))
 
         val shelvingIdB: ShelvingId = ShelvingId(11).getOrElse(fail())
@@ -39,8 +40,8 @@ class ShelvingGroupTest extends AnyFunSpec{
       }
     }
 
-    describe("when remove a shelving"){
-      it("should be removed"){
+    describe("when remove a shelving") {
+      it("should be removed") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, List[Shelving](shelving))
 
         val shelvingIdB: ShelvingId = ShelvingId(11).getOrElse(fail())
@@ -54,8 +55,8 @@ class ShelvingGroupTest extends AnyFunSpec{
       }
     }
 
-    describe("when update a shelving"){
-      it("should be updated"){
+    describe("when update a shelving") {
+      it("should be updated") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, List[Shelving](shelving))
 
         val shelfIdB: ShelfId = ShelfId(55).getOrElse(fail())

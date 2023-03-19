@@ -18,7 +18,7 @@ trait Shelf {
 }
 
 object Shelf {
-  
+
   final private case class ShelfImpl(shelfId: ShelfId, itemsRows: List[ItemsRow]) extends Shelf
 
   given ShelfOps[Shelf] with {

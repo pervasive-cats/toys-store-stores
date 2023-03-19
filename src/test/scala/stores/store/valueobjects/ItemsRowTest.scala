@@ -3,6 +3,7 @@ package stores.store.valueobjects
 
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
+
 import stores.store.valueobjects.ItemsRowOps.*
 
 class ItemsRowTest extends AnyFunSpec {
@@ -11,9 +12,9 @@ class ItemsRowTest extends AnyFunSpec {
   val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   val count: Count = Count(2).getOrElse(fail())
 
-  describe("An Items row"){
-    describe("when created with an items row id, a catalog item and a count"){
-      it("should contain them"){
+  describe("An Items row") {
+    describe("when created with an items row id, a catalog item and a count") {
+      it("should contain them") {
         val itemsRow: ItemsRow = ItemsRow(itemsRowId, catalogItem, count)
         itemsRow.itemsRowId shouldBe itemsRowId
         itemsRow.catalogItem shouldBe catalogItem
@@ -21,8 +22,8 @@ class ItemsRowTest extends AnyFunSpec {
       }
     }
 
-    describe("when update with a new catalog item and a count"){
-      it("should contain them"){
+    describe("when update with a new catalog item and a count") {
+      it("should contain them") {
         val itemsRow: ItemsRow = ItemsRow(itemsRowId, catalogItem, count)
 
         val catalogItemB: CatalogItem = CatalogItem(11).getOrElse(fail())

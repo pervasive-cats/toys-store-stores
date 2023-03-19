@@ -17,9 +17,9 @@ trait ShelfOps[A <: Shelf] {
 }
 
 object ShelfOps {
-  
+
   extension [A <: Shelf: ShelfOps](shelf: A) {
-    
+
     def addItemsRow(itemsRow: ItemsRow) = implicitly[ShelfOps[A]].addItemsRow(shelf, itemsRow)
 
     def removeItemsRow(itemsRowId: ItemsRowId) = implicitly[ShelfOps[A]].removeItemsRow(shelf, itemsRowId)
