@@ -9,6 +9,7 @@ package stores.store.valueobjects
 
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
+
 import stores.store.valueobjects.ShelvingOps.*
 
 class ShelvingTest extends AnyFunSpec {
