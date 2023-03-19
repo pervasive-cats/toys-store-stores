@@ -13,3 +13,10 @@ trait Shelving {
 
   val shelves: List[Shelf]
 }
+
+object Shelving {
+
+  private case class ShelvingImpl(shelvingId: ShelvingId, shelves: List[Shelf]) extends Shelving
+
+  def apply(shelvingId: ShelvingId, shelves: List[Shelf]): Shelving = ShelvingImpl(shelvingId, shelves)
+}
