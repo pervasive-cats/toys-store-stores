@@ -9,9 +9,21 @@ package stores.store.valueobjects
 
 trait ShelvingGroupOps[A <: ShelvingGroup] {
 
-  def addShelving(shelving: Shelving): A
+  def addShelving(shelvingGroup: ShelvingGroup, shelving: Shelving): ShelvingGroup
 
-  def removeShelving(shelvingId: ShelvingId): A
+  def removeShelving(shelvingGroup: ShelvingGroup,shelvingId: ShelvingId): ShelvingGroup
 
-  def updateShelving(shelving: Shelving): A
+  def updateShelving(shelvingGroup: ShelvingGroup,shelving: Shelving): ShelvingGroup
+}
+
+object ShelvingGroupOps{
+
+  extension [A <: ShelvingGroup: ShelvingGroupOps](shelvingGroup: A){
+
+    def addShelving(shelving: Shelving): ShelvingGroup = implicitly[ShelvingGroupOps[A]].addShelving(shelvingGroup, shelving)
+
+    def removeShelving(shelvingId: ShelvingId): ShelvingGroup = implicitly[ShelvingGroupOps[A]].removeShelving(shelvingGroup, shelvingId)
+
+    def updateShelving(shelving: Shelving): ShelvingGroup = implicitly[ShelvingGroupOps[A]].updateShelving(shelvingGroup, shelving)
+  }
 }
