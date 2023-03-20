@@ -7,10 +7,9 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import stores.store.Repository
-import stores.store.entities.Store
 import stores.store.valueobjects.StoreId
 
+import scala.jdk.OptionConverters.RichOptional
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import akka.actor.{ActorSystem, ActorRef as UntypedActorRef}
@@ -29,137 +28,183 @@ import stores.application.actors.DittoActor
 import stores.application.actors.commands.DittoCommand.RaiseAlarm
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand}
+import stores.store.entities.Store
+import stores.application.routes.entities.Entity.ResultResponseEntity
+import stores.application.actors.DittoActor.DittoError
 
+import org.eclipse.ditto.base.model.common.HttpStatus
+import org.eclipse.ditto.client.configuration.{BasicAuthenticationConfiguration, WebSocketMessagingConfiguration}
+import org.eclipse.ditto.client.{DittoClient, DittoClients}
+import org.eclipse.ditto.client.live.messages.RepliableMessage
+import org.eclipse.ditto.client.messaging.{AuthenticationProviders, MessagingProviders}
+import org.eclipse.ditto.client.options.Options
 import spray.json.DefaultJsonProtocol.IntJsonFormat
 import org.eclipse.ditto.json.JsonObject
+import org.eclipse.ditto.messages.model.MessageDirection
+import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover, Ignore, Tag}
 import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny, enrichString}
+import stores.application.Serializers.given
 
 import java.util.concurrent.{CountDownLatch, ForkJoinPool}
+import java.util.function.BiConsumer
 import java.util.regex.Pattern
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
+import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
+
+import org.eclipse.ditto.policies.model.PolicyId
+
 import scala.util.{Failure, Success} // scalafix:ok
 
-@DoNotDiscover
+//@DoNotDiscover
 class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSupport {
 
   private val testKit: ActorTestKit = ActorTestKit()
   private val rootActorProbe: TestProbe[RootCommand] = testKit.createTestProbe[RootCommand]()
-  private val messageBrokerActorProbe: TestProbe[MessageBrokerCommand] = testKit.createTestProbe[MessageBrokerCommand]()
   private val responseProbe: TestProbe[Validated[Unit]] = testKit.createTestProbe[Validated[Unit]]()
   private val serviceProbe: TestProbe[DittoCommand] = testKit.createTestProbe[DittoCommand]()
   private val config: Config = ConfigFactory.load()
+
   private val dittoConfig: Config = config.getConfig("ditto")
 
-  private given ActorSystem = testKit.system.classicSystem
-  private val client: HttpExt = Http()
-  private val repository: Repository = Repository()
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+  private var maybeClient: Option[DittoClient] = None
 
-  private val dittoActor: ActorRef[DittoCommand] = testKit.spawn(
-    DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dittoConfig)
-  )
+  private val store: Store = Store(StoreId(5).getOrElse(fail()))
+  private def sendReply(
+                         message: RepliableMessage[String, String],
+                         correlationId: String,
+                         status: HttpStatus,
+                         payload: String
+                       ): Unit = message.reply().httpStatus(status).correlationId(correlationId).payload(payload).send()
 
-  private val store: Store = Store(StoreId(1).getOrElse(fail()))
-
-  private def uri(hostName: String, port: String, namespace: String, store: Store): String =
-    s"http://$hostName:$port/api/2/things/$namespace:antiTheftSytem-${store.storeId.value}"
-
-  private case class DittoData(
-    direction: String,
-    messageSubject: String,
-    store: Store,
-    payload: Seq[(String, JsValue)]
-  )
-
-  private def parseDittoProtocol(namespace: String, message: String): Option[DittoData] = {
-    val thingIdMatcher: Regex = (Pattern.quote(namespace) + ":antiTheftSystem-(?<store>[0-9]+)").r
-    message.parseJson.asJsObject.getFields("headers", "value") match {
-      case Seq(headers, value) =>
-        headers
-          .asJsObject
-          .getFields("ditto-message-direction", "ditto-message-subject", "ditto-message-thing-id") match {
-            case Seq(JsString(direction), JsString(messageSubject), JsString(thingIdMatcher(cartId, store)))
-                 if cartId.toLongOption.isDefined && store.toLongOption.isDefined =>
-              StoreId(store.toLong)
-                .map(s => Some(DittoData(direction, messageSubject, Store(s), value.asJsObject.fields.toSeq.sortBy(_._1))))
-                .getOrElse(None)
-            case _ => None
-          }
-      case Seq(headers) =>
-        headers
-          .asJsObject
-          .getFields("ditto-message-direction", "ditto-message-subject", "ditto-message-thing-id") match {
-            case Seq(JsString(direction), JsString(messageSubject), JsString(thingIdMatcher(store)))
-                 if store.toLongOption.isDefined =>
-              StoreId(store.toLong).map(s => Some(DittoData(direction, messageSubject, Store(s), Seq.empty))).getOrElse(None)
-            case _ => None
-          }
-      case _ => None
+  private def handleMessage(
+                             message: RepliableMessage[String, String],
+                             messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
+                             payloadFields: String*
+                           ): Unit = {
+    val thingIdMatcher: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
+    (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
+      case (MessageDirection.TO, thingIdMatcher(store), Some(correlationId))
+        if store.toLongOption.isDefined =>
+        StoreId(store.toLong).fold(
+          error => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, ErrorResponseEntity(error).toJson.compactPrint),
+          storeId =>
+            messageHandler(
+              message,
+              Store(storeId),
+              correlationId,
+              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+            )
+        )
+      case _ => ()
     }
   }
 
   override def beforeAll(): Unit = {
-    val latch: CountDownLatch = CountDownLatch(1)
-    val (websocket, response): (UntypedActorRef, Future[WebSocketUpgradeResponse]) =
-      Source
-        .actorRef[Message](
-          { case m: TextMessage.Strict if m.text === "SUCCESS" => CompletionStrategy.draining },
-          { case m: TextMessage.Strict if m.text === "ERROR" => IllegalStateException() },
-          bufferSize = 1,
-          OverflowStrategy.dropTail
+    val disconnectedDittoClient = DittoClients.newInstance(
+      MessagingProviders.webSocket(
+        WebSocketMessagingConfiguration
+          .newBuilder
+          .endpoint(s"ws://${dittoConfig.getString("hostName")}:${dittoConfig.getString("portNumber")}/ws/2")
+          .connectionErrorHandler(_ => fail())
+          .build,
+        AuthenticationProviders.basic(
+          BasicAuthenticationConfiguration
+            .newBuilder
+            .username(dittoConfig.getString("username"))
+            .password(dittoConfig.getString("password"))
+            .build
         )
-        .viaMat(
-          client.webSocketClientFlow(
-            WebSocketRequest(
-              s"ws://${dittoConfig.getString("hostName")}:${dittoConfig.getString("portNumber")}/ws/2",
-              extraHeaders =
-                Seq(Authorization(BasicHttpCredentials(dittoConfig.getString("username"), dittoConfig.getString("password"))))
-            )
-          )
-        )(Keep.both)
-        .toMat(
-          Flow[Message]
-            .mapAsync(parallelism = 2) {
-              case t: TextMessage => t.toStrict(60.seconds)
-              case _ => Future.failed[TextMessage.Strict](IllegalArgumentException())
-            }
-            .mapConcat[DittoCommand](t =>
-              if (t.text === "START-SEND-MESSAGES:ACK") {
-                latch.countDown()
-                List.empty
-              } else {
-                parseDittoProtocol(dittoConfig.getString("namespace"), t.text) match { // send action messages to devices
-                  case Some(DittoData("TO", "raiseAlarm", store, Seq())) =>
-                    RaiseAlarm(store.storeId) :: Nil
-                  case _ => Nil
-                }
-              }
-            )
-            .to(Sink.foreach(serviceProbe ! _))
-        )(Keep.left)
-        .run()
-    given ExecutionContext = ExecutionContext.fromExecutor(ForkJoinPool.commonPool())
-    response
-      .onComplete {
-        case Failure(_) => fail()
-        case Success(r) =>
-          if (r.response.status === StatusCodes.SwitchingProtocols)
-            websocket ! TextMessage("START-SEND-MESSAGES?namespaces=" + dittoConfig.getString("namespace"))
-          else {
-            println(r.response)
-            fail()
-          }
+      )
+    )
+    val client: DittoClient =
+      disconnectedDittoClient
+        .connect
+        .exceptionally { _ =>
+          disconnectedDittoClient.destroy()
+          fail()
+        }
+        .toCompletableFuture
+        .get()
+    client
+      .live
+      .startConsumption(
+        Options.Consumption.namespaces(dittoConfig.getString("namespace"))
+      )
+      .exceptionally { _ =>
+        disconnectedDittoClient.destroy()
+        fail()
       }
-    latch.await()
+      .toCompletableFuture
+      .get()
+    client
+      .live
+      .registerForMessage[String, String](
+        "ditto_actor_raiseAlarm",
+        "raiseAlarm",
+        classOf[String],
+        (msg: RepliableMessage[String, String]) =>
+          handleMessage(
+            msg,
+            (msg, store, correlationId, _) => {
+              serviceProbe ! RaiseAlarm(store.storeId)
+              sendReply(
+                msg,
+                correlationId,
+                HttpStatus.OK,
+                ResultResponseEntity(()).toJson.compactPrint
+              )
+            }
+          ))
+    maybeClient = Some(client)
   }
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  private given ExecutionContext = ExecutionContext.fromExecutor(ForkJoinPool.commonPool())
+  private def thingId(storeId: StoreId): ThingId =
+    ThingId.of(s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}")
+
+  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null"))
+  private def responseHandler[T]: ActorRef[Validated[Unit]] => BiConsumer[T, Throwable] =
+    r =>
+      (_, t) =>
+        if (t === null)
+          r ! Right[ValidationError, Unit](())
+        else
+          r ! Left[ValidationError, Unit](DittoError)
+
+  private def createAntiTheftThing(storeId: StoreId, replyTo: ActorRef[Validated[Unit]]): Unit = {
+    maybeClient.getOrElse(fail())
+      .twin()
+      .create(
+        JsonObject
+          .newBuilder
+          .set("thingId", s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}")
+          .set("definition", dittoConfig.getString("thingModel"))
+          .set(
+            "attributes",
+            JsonObject
+              .newBuilder
+              .set("storeId", storeId.value: Long)
+              .build
+          )
+          .build
+      )
+      .whenComplete(responseHandler(replyTo))
+  }
+
+  private def removeAntiTheftThing(storeId: StoreId, replyTo: ActorRef[Validated[Unit]]): Unit = {
+    maybeClient.getOrElse(fail())
+      .twin().delete(ThingId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${storeId.value}"))
+      .thenCompose(_ =>
+        maybeClient.getOrElse(fail()).policies().delete(PolicyId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${storeId.value}")))
+      .whenComplete(responseHandler(replyTo))
+  }
 
   describe("A Ditto actor") {
     describe("when first started up") {
