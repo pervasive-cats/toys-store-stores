@@ -23,15 +23,15 @@ class ShelfTest extends AnyFunSpec {
   describe("A Shelf") {
     describe("when created with a shelf id and a list of items rows") {
       it("should contain them") {
-        val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
+        val shelf: Shelf = Shelf(shelfId, Seq[ItemsRow](itemsRow))
         shelf.shelfId shouldBe shelfId
-        shelf.itemsRows shouldBe List[ItemsRow](itemsRow)
+        shelf.itemsRows shouldBe Seq[ItemsRow](itemsRow)
       }
     }
 
     describe("when add a new items row") {
       it("should be added") {
-        val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
+        val shelf: Shelf = Shelf(shelfId, Seq[ItemsRow](itemsRow))
 
         val itemsRowIdB: ItemsRowId = ItemsRowId(12).getOrElse(fail())
         val itemsRowB: ItemsRow = ItemsRow(itemsRowIdB, catalogItem, count)
@@ -39,13 +39,13 @@ class ShelfTest extends AnyFunSpec {
         val shelfB = shelf.addItemsRow(itemsRowB)
 
         shelfB.shelfId shouldBe shelfId
-        shelfB.itemsRows shouldBe List[ItemsRow](itemsRow) ++ List[ItemsRow](itemsRowB)
+        shelfB.itemsRows shouldBe Seq[ItemsRow](itemsRow) ++ Seq[ItemsRow](itemsRowB)
       }
     }
 
     describe("when remove an items row") {
       it("should be removed") {
-        val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
+        val shelf: Shelf = Shelf(shelfId, Seq[ItemsRow](itemsRow))
 
         val itemsRowIdB: ItemsRowId = ItemsRowId(12).getOrElse(fail())
         val itemsRowB: ItemsRow = ItemsRow(itemsRowIdB, catalogItem, count)
@@ -55,13 +55,13 @@ class ShelfTest extends AnyFunSpec {
         val shelfC = shelfB.removeItemsRow(itemsRow.itemsRowId)
 
         shelfC.shelfId shouldBe shelfId
-        shelfC.itemsRows shouldBe List[ItemsRow](itemsRowB)
+        shelfC.itemsRows shouldBe Seq[ItemsRow](itemsRowB)
       }
     }
 
     describe("when update an items row") {
       it("should be updated") {
-        val shelf: Shelf = Shelf(shelfId, List[ItemsRow](itemsRow))
+        val shelf: Shelf = Shelf(shelfId, Seq[ItemsRow](itemsRow))
 
         val catalogItemB: CatalogItem = CatalogItem(13).getOrElse(fail())
         val countB: Count = Count(14).getOrElse(fail())
@@ -70,7 +70,7 @@ class ShelfTest extends AnyFunSpec {
         val shelfB = shelf.updateItemsRow(itemsRowB)
 
         shelfB.shelfId shouldBe shelfId
-        shelfB.itemsRows shouldBe List[ItemsRow](itemsRowB)
+        shelfB.itemsRows shouldBe Seq[ItemsRow](itemsRowB)
       }
     }
   }
