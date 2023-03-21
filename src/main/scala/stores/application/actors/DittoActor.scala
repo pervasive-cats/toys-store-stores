@@ -246,7 +246,7 @@ object DittoActor extends SprayJsonSupport {
         case RaiseAlarm(storeId) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:antiTheftSystem-{${storeId.value}}",
+            s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}",
             "raiseAlarm",
             None,
             None

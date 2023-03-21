@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import stores.store.valueobjects.StoreId
+import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
 
 import scala.jdk.OptionConverters.RichOptional
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
@@ -45,10 +45,10 @@ import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover, Ignore, Tag}
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny, enrichString}
+import spray.json.{enrichAny, enrichString, JsBoolean, JsNumber, JsObject, JsString, JsValue}
 import stores.application.Serializers.given
 
-import java.util.concurrent.{CountDownLatch, ForkJoinPool}
+import java.util.concurrent.{CountDownLatch, ForkJoinPool, TimeUnit}
 import java.util.function.BiConsumer
 import java.util.regex.Pattern
 import scala.concurrent.duration.DurationInt
@@ -60,12 +60,11 @@ import org.eclipse.ditto.policies.model.PolicyId
 
 import scala.util.{Failure, Success} // scalafix:ok
 
-//@DoNotDiscover
+@DoNotDiscover
 class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSupport {
 
   private val testKit: ActorTestKit = ActorTestKit()
   private val rootActorProbe: TestProbe[RootCommand] = testKit.createTestProbe[RootCommand]()
-  private val responseProbe: TestProbe[Validated[Unit]] = testKit.createTestProbe[Validated[Unit]]()
   private val serviceProbe: TestProbe[DittoCommand] = testKit.createTestProbe[DittoCommand]()
   private val config: Config = ConfigFactory.load()
 
@@ -75,22 +74,24 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private var maybeClient: Option[DittoClient] = None
 
   private val store: Store = Store(StoreId(5).getOrElse(fail()))
+  private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
+  private val itemId: ItemId = ItemId(1).getOrElse(fail())
+
   private def sendReply(
-                         message: RepliableMessage[String, String],
-                         correlationId: String,
-                         status: HttpStatus,
-                         payload: String
-                       ): Unit = message.reply().httpStatus(status).correlationId(correlationId).payload(payload).send()
+    message: RepliableMessage[String, String],
+    correlationId: String,
+    status: HttpStatus,
+    payload: String
+  ): Unit = message.reply().httpStatus(status).correlationId(correlationId).payload(payload).send()
 
   private def handleMessage(
-                             message: RepliableMessage[String, String],
-                             messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
-                             payloadFields: String*
-                           ): Unit = {
+    message: RepliableMessage[String, String],
+    messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
+    payloadFields: String*
+  ): Unit = {
     val thingIdMatcher: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
     (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
-      case (MessageDirection.TO, thingIdMatcher(store), Some(correlationId))
-        if store.toLongOption.isDefined =>
+      case (MessageDirection.TO, thingIdMatcher(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
           error => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, ErrorResponseEntity(error).toJson.compactPrint),
           storeId =>
@@ -160,56 +161,74 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
                 ResultResponseEntity(()).toJson.compactPrint
               )
             }
-          ))
+          )
+      )
+    testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dittoConfig))
     maybeClient = Some(client)
   }
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  private def thingId(storeId: StoreId): ThingId =
-    ThingId.of(s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}")
+  private def thingId(store: Store): ThingId =
+    ThingId.of(s"${dittoConfig.getString("namespace")}:antiTheftSystem-${store.storeId.value}")
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null"))
-  private def responseHandler[T]: ActorRef[Validated[Unit]] => BiConsumer[T, Throwable] =
-    r =>
-      (_, t) =>
-        if (t === null)
-          r ! Right[ValidationError, Unit](())
-        else
-          r ! Left[ValidationError, Unit](DittoError)
-
-  private def createAntiTheftThing(storeId: StoreId, replyTo: ActorRef[Validated[Unit]]): Unit = {
-    maybeClient.getOrElse(fail())
-      .twin()
+  private def createAntiTheftThing(store: Store): Unit =
+    maybeClient
+      .getOrElse(fail())
+      .twin
       .create(
         JsonObject
           .newBuilder
-          .set("thingId", s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}")
+          .set("thingId", s"${dittoConfig.getString("namespace")}:antiTheftSystem-${store.storeId.value}")
           .set("definition", dittoConfig.getString("thingModel"))
           .set(
             "attributes",
             JsonObject
               .newBuilder
-              .set("storeId", storeId.value: Long)
+              .set("storeId", store.storeId.value: Long)
               .build
           )
           .build
       )
-      .whenComplete(responseHandler(replyTo))
-  }
+      .toCompletableFuture
+      .get()
 
-  private def removeAntiTheftThing(storeId: StoreId, replyTo: ActorRef[Validated[Unit]]): Unit = {
-    maybeClient.getOrElse(fail())
-      .twin().delete(ThingId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${storeId.value}"))
+  private def removeAntiTheftThing(store: Store): Unit =
+    maybeClient
+      .getOrElse(fail())
+      .twin
+      .delete(thingId(store))
       .thenCompose(_ =>
-        maybeClient.getOrElse(fail()).policies().delete(PolicyId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${storeId.value}")))
-      .whenComplete(responseHandler(replyTo))
-  }
+        maybeClient
+          .getOrElse(fail())
+          .policies()
+          .delete(PolicyId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${store.storeId.value}"))
+      )
+      .toCompletableFuture
+      .get()
 
   describe("A Ditto actor") {
     describe("when first started up") {
-      ignore("should notify the root actor of its start") {
+      it("should notify the root actor of its start") {
         rootActorProbe.expectMessage(60.seconds, Startup(true))
+      }
+    }
+
+    describe("when receives a notification that an item is near an anti-theft system") {
+      it("should sound the alarm if the item is not in cart") {
+        val latch: CountDownLatch = CountDownLatch(1)
+        createAntiTheftThing(store)
+        maybeClient
+          .getOrElse(fail())
+          .live
+          .message[String]
+          .from(thingId(store))
+          .subject("itemDetected")
+          .payload(JsObject("catalogItemId" -> catalogItem.toJson, "itemId" -> itemId.toJson).compactPrint)
+          .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
+        latch.await(1, TimeUnit.MINUTES)
+        serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
+        removeAntiTheftThing(store)
       }
     }
   }
