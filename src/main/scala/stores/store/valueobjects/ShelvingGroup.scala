@@ -14,17 +14,17 @@ trait ShelvingGroup {
 
   val shelvingGroupId: ShelvingGroupId
 
-  val shelvings: List[Shelving]
+  val shelvings: Seq[Shelving]
 }
 
 object ShelvingGroup {
 
-  final private case class ShelvingGroupImpl(shelvingGroupId: ShelvingGroupId, shelvings: List[Shelving]) extends ShelvingGroup
+  final private case class ShelvingGroupImpl(shelvingGroupId: ShelvingGroupId, shelvings: Seq[Shelving]) extends ShelvingGroup
 
   given ShelvingGroupOps[ShelvingGroup] with {
 
     override def addShelving(shelvingGroup: ShelvingGroup, shelving: Shelving): ShelvingGroup =
-      ShelvingGroupImpl(shelvingGroup.shelvingGroupId, shelvingGroup.shelvings ++ List[Shelving](shelving))
+      ShelvingGroupImpl(shelvingGroup.shelvingGroupId, shelvingGroup.shelvings ++ Seq[Shelving](shelving))
 
     override def removeShelving(shelvingGroup: ShelvingGroup, shelvingId: ShelvingId): ShelvingGroup =
       ShelvingGroupImpl(shelvingGroup.shelvingGroupId, shelvingGroup.shelvings.filter(_.shelvingId !== shelvingId))
@@ -35,6 +35,6 @@ object ShelvingGroup {
         .addShelving(shelving)
   }
 
-  def apply(shelvingGroupId: ShelvingGroupId, shelvings: List[Shelving]): ShelvingGroup =
+  def apply(shelvingGroupId: ShelvingGroupId, shelvings: Seq[Shelving]): ShelvingGroup =
     ShelvingGroupImpl(shelvingGroupId, shelvings)
 }

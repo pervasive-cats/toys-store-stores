@@ -14,17 +14,17 @@ trait Shelving {
 
   val shelvingId: ShelvingId
 
-  val shelves: List[Shelf]
+  val shelves: Seq[Shelf]
 }
 
 object Shelving {
 
-  private case class ShelvingImpl(shelvingId: ShelvingId, shelves: List[Shelf]) extends Shelving
+  private case class ShelvingImpl(shelvingId: ShelvingId, shelves: Seq[Shelf]) extends Shelving
 
   given ShelvingOps[Shelving] with {
 
     override def addShelf(shelving: Shelving, shelf: Shelf): Shelving =
-      ShelvingImpl(shelving.shelvingId, shelving.shelves ++ List[Shelf](shelf))
+      ShelvingImpl(shelving.shelvingId, shelving.shelves ++ Seq[Shelf](shelf))
 
     override def removeShelf(shelving: Shelving, shelfId: ShelfId): Shelving =
       ShelvingImpl(shelving.shelvingId, shelving.shelves.filter(_.shelfId !== shelfId))
@@ -35,5 +35,5 @@ object Shelving {
         .addShelf(shelf)
   }
 
-  def apply(shelvingId: ShelvingId, shelves: List[Shelf]): Shelving = ShelvingImpl(shelvingId, shelves)
+  def apply(shelvingId: ShelvingId, shelves: Seq[Shelf]): Shelving = ShelvingImpl(shelvingId, shelves)
 }

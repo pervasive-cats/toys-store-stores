@@ -15,17 +15,17 @@ trait Store {
 
   val storeId: StoreId
 
-  val layout: List[ShelvingGroup]
+  val layout: Seq[ShelvingGroup]
 }
 
 object Store {
 
-  final private case class StoreImpl(storeId: StoreId, layout: List[ShelvingGroup]) extends Store
+  final private case class StoreImpl(storeId: StoreId, layout: Seq[ShelvingGroup]) extends Store
 
   given StoreOps[Store] with {
 
     override def addShelvingGroup(store: Store, shelvingGroup: ShelvingGroup): Store =
-      StoreImpl(store.storeId, store.layout ++ List[ShelvingGroup](shelvingGroup))
+      StoreImpl(store.storeId, store.layout ++ Seq[ShelvingGroup](shelvingGroup))
 
     override def removeShelvingGroup(store: Store, shelvingGroupId: ShelvingGroupId): Store =
       StoreImpl(store.storeId, store.layout.filter(_.shelvingGroupId !== shelvingGroupId))
@@ -36,5 +36,5 @@ object Store {
         .addShelvingGroup(shelvingGroup)
   }
 
-  def apply(storeId: StoreId, layout: List[ShelvingGroup]): Store = StoreImpl(storeId, layout)
+  def apply(storeId: StoreId, layout: Seq[ShelvingGroup]): Store = StoreImpl(storeId, layout)
 }
