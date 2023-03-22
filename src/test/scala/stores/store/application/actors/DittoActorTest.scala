@@ -25,7 +25,7 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import com.typesafe.config.{Config, ConfigFactory}
 import eu.timepit.refined.auto.autoUnwrap
 import stores.application.actors.DittoActor
-import stores.application.actors.commands.DittoCommand.RaiseAlarm
+import stores.application.actors.commands.DittoCommand.{ItemInsertedIntoDropSystem, ItemReturned, RaiseAlarm}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand}
 import stores.store.entities.Store
@@ -45,7 +45,7 @@ import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover, Ignore, Tag}
-import spray.json.{enrichAny, enrichString, JsBoolean, JsNumber, JsObject, JsString, JsValue}
+import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny, enrichString}
 import stores.application.Serializers.given
 
 import java.util.concurrent.{CountDownLatch, ForkJoinPool, TimeUnit}
@@ -75,7 +75,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(7).getOrElse(fail()))
+  private val store: Store = Store(StoreId(9).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
 
@@ -171,13 +171,22 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
 
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  private def thingId(store: Store): ThingId =
+  private def antiTheftSystemThingId(store: Store): ThingId =
     ThingId.of(s"${dittoConfig.getString("namespace")}:antiTheftSystem-${store.storeId.value}")
 
-  private def createAntiTheftThing(store: Store): Unit = createThing(thingId(store), "thingModelAntiTheftSystem", JsonObject
+  private def dropSystemThingId(store: Store): ThingId =
+    ThingId.of(s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}")
+
+  private def createAntiTheftSystemThing(store: Store): Unit = createThing(antiTheftSystemThingId(store), "thingModelAntiTheftSystem", JsonObject
     .newBuilder
     .set("storeId", store.storeId.value: Long)
     .build)
+
+  private def createDropSystemThing(store: Store): Unit = createThing(dropSystemThingId(store), "thingModelDropSystem", JsonObject
+    .newBuilder
+    .set("store", store.storeId.value: Long)
+    .build)
+
   private def createThing(thingId: ThingId, thingModel: String, attributes: JsonObject): Unit =
     maybeClient
       .getOrElse(fail())
@@ -196,7 +205,9 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
       .toCompletableFuture
       .get()
 
-  private def removeAntiTheftThing(store: Store): Unit = removeThing(thingId(store))
+  private def removeAntiTheftSystemThing(store: Store): Unit = removeThing(antiTheftSystemThingId(store))
+
+  private def removeDropSystemThing(store: Store): Unit = removeThing(dropSystemThingId(store))
 
   private def removeThing(thingId: ThingId): Unit =
     maybeClient
@@ -222,27 +233,63 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
     describe("when it receives a notification that an item is near an anti-theft system") {
       it("should sound the alarm if the item is not in cart") {
         val latch: CountDownLatch = CountDownLatch(1)
-        createAntiTheftThing(store)
+        createAntiTheftSystemThing(store)
         maybeClient
           .getOrElse(fail())
           .live
           .message[String]
-          .from(thingId(store))
+          .from(antiTheftSystemThingId(store))
           .subject("itemDetected")
           .payload(JsObject("catalogItemId" -> catalogItem.toJson, "itemId" -> itemId.toJson).compactPrint)
           .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
         latch.await(1, TimeUnit.MINUTES)
         serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
-        removeAntiTheftThing(store)
+        removeAntiTheftSystemThing(store)
       }
     }
 
     describe("when asked to raise a shop's alarm") {
       it("should sound the alarm") {
-        createAntiTheftThing(store)
+        createAntiTheftSystemThing(store)
         dittoActor ! RaiseAlarm(store.storeId)
         serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
-        removeAntiTheftThing(store)
+        removeAntiTheftSystemThing(store)
+      }
+    }
+
+    describe("when notified of an item being inserted into the drop system") {
+      it("should handle the event") {
+        createDropSystemThing(store)
+        val latch: CountDownLatch = CountDownLatch(1)
+        maybeClient
+          .getOrElse(fail())
+          .live
+          .message[String]
+          .from(dropSystemThingId(store))
+          .subject("itemInsertedIntoDropSystem")
+          .payload(JsObject("catalogItem" -> catalogItem.toJson, "itemId" -> itemId.toJson).compactPrint)
+          .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
+        latch.await(1, TimeUnit.MINUTES)
+        // stoutput
+        removeDropSystemThing(store)
+      }
+    }
+
+    describe("when notified of an item being returned") {
+      it("should self-send the corresponding message") {
+        createDropSystemThing(store)
+        val latch: CountDownLatch = CountDownLatch(1)
+        maybeClient
+          .getOrElse(fail())
+          .live
+          .message[String]
+          .from(dropSystemThingId(store))
+          .subject("itemReturned")
+          .payload(JsObject("catalogItem" -> catalogItem.toJson, "itemId" -> itemId.toJson).compactPrint)
+          .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
+        latch.await(1, TimeUnit.MINUTES)
+        // stoutput
+        removeDropSystemThing(store)
       }
     }
   }
