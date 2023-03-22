@@ -31,7 +31,7 @@
                     "op": [
                         "readproperty"
                     ],
-                    "href": "/io.github.pervasivecats:dropsystem-{store}/attributes/store"
+                    "href": "/io.github.pervasivecats:dropSystem-{store}/attributes/store"
                 }
             ]
         }
@@ -45,7 +45,7 @@
                     "op": [
                         "invokeaction"
                     ],
-                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/inbox/showItemData",
+                    "href": "/io.github.pervasivecats:dropSystem-{store}/messages/inbox/showItemData",
                     "contentType": "application/json",
                     "response": {
                         "contentType": "application/json"
@@ -142,7 +142,7 @@
                     "op": [
                         "subscribeevent"
                     ],
-                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/outbox/itemInsertedIntoDropSystem",
+                    "href": "/io.github.pervasivecats:dropSystem-{store}/messages/outbox/itemInsertedIntoDropSystem",
                     "contentType": "application/json"
                 }
             ],
@@ -172,7 +172,7 @@
                     "op": [
                         "subscribeevent"
                     ],
-                    "href": "/io.github.pervasivecats:dropsystem-{store}/messages/outbox/itemReturned",
+                    "href": "/io.github.pervasivecats:dropSystem-{store}/messages/outbox/itemReturned",
                     "contentType": "application/json"
                 }
             ],

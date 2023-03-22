@@ -23,4 +23,8 @@ object DittoCommand {
   final case class RaiseAlarm(storeId: StoreId) extends DittoCommand
 
   final case class ItemDetected(store: Store, catalogItem: CatalogItem, itemId: ItemId) extends DittoCommand
+
+  final case class ItemInsertedIntoDropSystem(store: Store, catalogItem: CatalogItem, itemId: ItemId) extends DittoCommand
+
+  final case class ItemReturned(store: Store, catalogItem: CatalogItem, itemId: ItemId) extends DittoCommand
 }
