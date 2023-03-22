@@ -65,15 +65,17 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
 
   private val testKit: ActorTestKit = ActorTestKit()
   private val rootActorProbe: TestProbe[RootCommand] = testKit.createTestProbe[RootCommand]()
+  private val messageBrokerActorProbe: TestProbe[MessageBrokerCommand] = testKit.createTestProbe[MessageBrokerCommand]()
   private val serviceProbe: TestProbe[DittoCommand] = testKit.createTestProbe[DittoCommand]()
   private val config: Config = ConfigFactory.load()
 
   private val dittoConfig: Config = config.getConfig("ditto")
+  private val dittoActor: ActorRef[DittoCommand] = testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dittoConfig))
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(5).getOrElse(fail()))
+  private val store: Store = Store(StoreId(6).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
 
@@ -214,7 +216,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
       }
     }
 
-    describe("when receives a notification that an item is near an anti-theft system") {
+    describe("when it receives a notification that an item is near an anti-theft system") {
       it("should sound the alarm if the item is not in cart") {
         val latch: CountDownLatch = CountDownLatch(1)
         createAntiTheftThing(store)
@@ -229,6 +231,13 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         latch.await(1, TimeUnit.MINUTES)
         serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
         removeAntiTheftThing(store)
+      }
+    }
+
+    describe("when asked to raise a shop's alarm") {
+      it("should sound the alarm") {
+        dittoActor ! RaiseAlarm(store.storeId)
+        serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
       }
     }
   }
