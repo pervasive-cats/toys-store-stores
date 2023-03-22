@@ -75,7 +75,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(6).getOrElse(fail()))
+  private val store: Store = Store(StoreId(7).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
 
@@ -174,37 +174,40 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private def thingId(store: Store): ThingId =
     ThingId.of(s"${dittoConfig.getString("namespace")}:antiTheftSystem-${store.storeId.value}")
 
-  private def createAntiTheftThing(store: Store): Unit =
+  private def createAntiTheftThing(store: Store): Unit = createThing(thingId(store), "thingModelAntiTheftSystem", JsonObject
+    .newBuilder
+    .set("storeId", store.storeId.value: Long)
+    .build)
+  private def createThing(thingId: ThingId, thingModel: String, attributes: JsonObject): Unit =
     maybeClient
       .getOrElse(fail())
       .twin
       .create(
         JsonObject
           .newBuilder
-          .set("thingId", s"${dittoConfig.getString("namespace")}:antiTheftSystem-${store.storeId.value}")
-          .set("definition", dittoConfig.getString("thingModel"))
+          .set("thingId", s"${thingId.getNamespace}:${thingId.getName}")
+          .set("definition", dittoConfig.getString(thingModel))
           .set(
             "attributes",
-            JsonObject
-              .newBuilder
-              .set("storeId", store.storeId.value: Long)
-              .build
+            attributes
           )
           .build
       )
       .toCompletableFuture
       .get()
 
-  private def removeAntiTheftThing(store: Store): Unit =
+  private def removeAntiTheftThing(store: Store): Unit = removeThing(thingId(store))
+
+  private def removeThing(thingId: ThingId): Unit =
     maybeClient
       .getOrElse(fail())
       .twin
-      .delete(thingId(store))
+      .delete(thingId)
       .thenCompose(_ =>
         maybeClient
           .getOrElse(fail())
           .policies()
-          .delete(PolicyId.of(dittoConfig.getString("namespace"), s"antiTheftSystem-${store.storeId.value}"))
+          .delete(PolicyId.of(thingId.getNamespace, thingId.getName))
       )
       .toCompletableFuture
       .get()
@@ -236,8 +239,10 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
 
     describe("when asked to raise a shop's alarm") {
       it("should sound the alarm") {
+        createAntiTheftThing(store)
         dittoActor ! RaiseAlarm(store.storeId)
         serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(store.storeId))
+        removeAntiTheftThing(store)
       }
     }
   }
