@@ -13,12 +13,14 @@ import java.util.concurrent.ForkJoinPool
 import java.util.function.BiConsumer
 import java.util.function.BiFunction
 import java.util.regex.Pattern
+
 import scala.concurrent.*
 import scala.concurrent.duration.DurationInt
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
@@ -41,7 +43,12 @@ import org.eclipse.ditto.messages.model.MessageDirection
 import org.eclipse.ditto.policies.model.PolicyId
 import org.eclipse.ditto.things.model.*
 import org.eclipse.ditto.things.model.signals.commands.exceptions.ThingNotAccessibleException
-import spray.json.{JsNumber, JsObject, JsValue, enrichAny, enrichString}
+import spray.json.JsNumber
+import spray.json.JsObject
+import spray.json.JsValue
+import spray.json.enrichAny
+import spray.json.enrichString
+
 import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.MessageBrokerCommand
 import stores.application.Serializers.given
@@ -49,7 +56,7 @@ import stores.application.actors.commands.DittoCommand.*
 import AnyOps.===
 import stores.store.Repository.StoreNotFound
 import stores.store.entities.Store
-import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ShelvingGroupId, ShelvingId, StoreId}
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.store.domainevents.ItemInsertedInDropSystem as ItemInsertedInDropSystemEvent
@@ -117,11 +124,19 @@ object DittoActor extends SprayJsonSupport {
 
   private def handleMessage(
     message: RepliableMessage[String, String],
-    messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
+    messageHandler: (
+      RepliableMessage[String, String],
+      Store,
+      Option[ShelvingGroupId],
+      Option[ShelvingId],
+      String,
+      Seq[JsValue]
+    ) => Unit,
     payloadFields: String*
   ): Unit = {
     val thingIdMatcherAntiTheftSystem: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
     val thingIdMatcherDropSystem: Regex = "dropSystem-(?<store>[0-9]+)".r
+    val thingIdMatcherShelving: Regex = "shelving-(?<store>[0-9]+)-(?<shelvingGroup>[0-9]+)-(?<shelving>[0-9]+)".r
     (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
       case (MessageDirection.FROM, thingIdMatcherAntiTheftSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
@@ -131,6 +146,8 @@ object DittoActor extends SprayJsonSupport {
             messageHandler(
               message,
               Store(storeId),
+              None,
+              None,
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -143,6 +160,27 @@ object DittoActor extends SprayJsonSupport {
             messageHandler(
               message,
               Store(storeId),
+              None,
+              None,
+              correlationId,
+              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+            )
+        )
+      case (MessageDirection.FROM, thingIdMatcherShelving(store, shelvingGroup, shelving), Some(correlationId))
+           if store.toLongOption.isDefined && shelvingGroup.toLongOption.isDefined && shelving.toLongOption.isDefined =>
+        (for {
+          s <- StoreId(store.toLong)
+          sg <- ShelvingGroupId(shelvingGroup.toLong)
+          sh <- ShelvingId(shelving.toLong)
+        } yield (s, sg, sh)).fold(
+          error =>
+            sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(error).toJson.compactPrint)),
+          (s, sg, sh) =>
+            messageHandler(
+              message,
+              Store(s),
+              Some(sg),
+              Some(sh),
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -206,7 +244,7 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, correlationId, fields) =>
+                      (msg, store, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -244,7 +282,7 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, correlationId, fields) =>
+                      (msg, store, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -282,7 +320,7 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, correlationId, fields) =>
+                      (msg, store, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -343,7 +381,16 @@ object DittoActor extends SprayJsonSupport {
             client,
             s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}",
             "showItemData",
-            Some(JsonObject.of(JsObject("name" -> name.toJson, "description" -> description.toJson, "amount" -> amount.toJson, "currency" -> currency.toString.toJson).compactPrint)),
+            Some(
+              JsonObject.of(
+                JsObject(
+                  "name" -> name.toJson,
+                  "description" -> description.toJson,
+                  "amount" -> amount.toJson,
+                  "currency" -> currency.toString.toJson
+                ).compactPrint
+              )
+            ),
             None
           )
           Behaviors.same[DittoCommand]

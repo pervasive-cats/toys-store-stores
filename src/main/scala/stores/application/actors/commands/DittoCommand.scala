@@ -32,5 +32,6 @@ object DittoCommand {
 
   final case class ItemReturned(store: Store, catalogItem: CatalogItem, itemId: ItemId) extends DittoCommand
 
-  final case class ShowItemData(store: Store, name: String, description: String, amount: Double, currency: Currency) extends DittoCommand
+  final case class ShowItemData(store: Store, name: String, description: String, amount: Double, currency: Currency)
+    extends DittoCommand
 }

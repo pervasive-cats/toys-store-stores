@@ -70,7 +70,9 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private val config: Config = ConfigFactory.load()
 
   private val dittoConfig: Config = config.getConfig("ditto")
-  private val dittoActor: ActorRef[DittoCommand] = testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dittoConfig))
+
+  private val dittoActor: ActorRef[DittoCommand] =
+    testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dittoConfig))
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
@@ -210,15 +212,23 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private def dropSystemThingId(store: Store): ThingId =
     ThingId.of(s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}")
 
-  private def createAntiTheftSystemThing(store: Store): Unit = createThing(antiTheftSystemThingId(store), "thingModelAntiTheftSystem", JsonObject
-    .newBuilder
-    .set("storeId", store.storeId.value: Long)
-    .build)
+  private def createAntiTheftSystemThing(store: Store): Unit = createThing(
+    antiTheftSystemThingId(store),
+    "thingModelAntiTheftSystem",
+    JsonObject
+      .newBuilder
+      .set("storeId", store.storeId.value: Long)
+      .build
+  )
 
-  private def createDropSystemThing(store: Store): Unit = createThing(dropSystemThingId(store), "thingModelDropSystem", JsonObject
-    .newBuilder
-    .set("store", store.storeId.value: Long)
-    .build)
+  private def createDropSystemThing(store: Store): Unit = createThing(
+    dropSystemThingId(store),
+    "thingModelDropSystem",
+    JsonObject
+      .newBuilder
+      .set("store", store.storeId.value: Long)
+      .build
+  )
 
   private def createThing(thingId: ThingId, thingModel: String, attributes: JsonObject): Unit =
     maybeClient
