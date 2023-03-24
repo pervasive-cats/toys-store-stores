@@ -106,7 +106,6 @@ object DittoActor extends SprayJsonSupport {
     payload: Option[JsonObject],
     replyTo: Option[ActorRef[Validated[Unit]]]
   ): Unit = {
-    println(s"[sendMessage] thingId:${thingId}, subject=${subject}, payload=${payload.getOrElse("_").toString}")
     val message: MessageSender.SetPayloadOrSend[JsonObject] =
       client
         .live()
@@ -376,7 +375,6 @@ object DittoActor extends SprayJsonSupport {
           )
           Behaviors.same[DittoCommand]
         case ShowItemData(store, name, description, amount, currency) =>
-          println(s"[DITTO INCOMING!!] ${name}, ${description}, ${amount}, ${currency.toString}")
           sendMessage(
             client,
             s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}",

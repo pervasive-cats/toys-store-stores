@@ -77,7 +77,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(29).getOrElse(fail()))
+  private val store: Store = Store(StoreId(42).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
 
@@ -93,9 +93,21 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
     messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
     payloadFields: String*
   ): Unit = {
-    val thingIdMatcher: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
+    val thingIdMatcherAntiTheftSystem: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
+    val thingIdMatcherDropSystem: Regex = "dropSystem-(?<store>[0-9]+)".r
     (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
-      case (MessageDirection.TO, thingIdMatcher(store), Some(correlationId)) if store.toLongOption.isDefined =>
+      case (MessageDirection.TO, thingIdMatcherAntiTheftSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
+        StoreId(store.toLong).fold(
+          error => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, ErrorResponseEntity(error).toJson.compactPrint),
+          storeId =>
+            messageHandler(
+              message,
+              Store(storeId),
+              correlationId,
+              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+            )
+        )
+      case (MessageDirection.TO, thingIdMatcherDropSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
           error => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, ErrorResponseEntity(error).toJson.compactPrint),
           storeId =>
@@ -176,11 +188,9 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         (msg: RepliableMessage[String, String]) =>
           handleMessage(
             msg,
-            (msg, store, correlationId, fields) => {
-              println("[test]1")
+            (msg, store, correlationId, fields) =>
               fields match {
-                case Seq(JsString(name), JsString(description), JsNumber(amount), JsString(currency)) =>
-                  println("[test]2")
+                case Seq(JsNumber(amount), JsString(currency), JsString(description), JsString(name)) =>
                   serviceProbe ! ShowItemData(store, name, description, amount.doubleValue, Currency.valueOf(currency))
                   sendReply(
                     msg,
@@ -189,15 +199,17 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
                     ResultResponseEntity(()).toJson.compactPrint
                   )
                 case _ =>
-                  println("[test]3")
                   sendReply(
                     msg,
                     correlationId,
                     HttpStatus.BAD_REQUEST,
                     ErrorResponseEntity(DittoError).toJson.compactPrint
                   )
-              }
-            }
+              },
+            "amount",
+            "currency",
+            "description",
+            "name"
           )
       )
     testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dittoConfig))
