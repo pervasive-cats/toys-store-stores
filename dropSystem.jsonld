@@ -57,20 +57,12 @@
             "input": {
                 "type": "object",
                 "required": [
-                    "name",
-                    "description",
                     "amount",
-                    "currency"
+                    "currency",
+                    "description",
+                    "name"
                 ],
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "maxLength": 100
-                    },
-                    "description": {
-                        "type": "string",
-                        "maxLength": 100
-                    },
                     "amount": {
                         "type": "number",
                         "minimum": 0.01
@@ -78,6 +70,14 @@
                     "currency": {
                         "type": "string",
                         "enum": ["EUR", "GBP", "USD", "CHF"]
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
                     }
                 }
             },

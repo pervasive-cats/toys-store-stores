@@ -41,10 +41,7 @@ import org.eclipse.ditto.messages.model.MessageDirection
 import org.eclipse.ditto.policies.model.PolicyId
 import org.eclipse.ditto.things.model.*
 import org.eclipse.ditto.things.model.signals.commands.exceptions.ThingNotAccessibleException
-import spray.json.JsNumber
-import spray.json.JsValue
-import spray.json.enrichAny
-import spray.json.enrichString
+import spray.json.{JsNumber, JsObject, JsValue, enrichAny, enrichString}
 import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.MessageBrokerCommand
 import stores.application.Serializers.given
@@ -328,7 +325,6 @@ object DittoActor extends SprayJsonSupport {
   ): Behavior[DittoCommand] = {
     root ! Startup(success = true)
     Behaviors.receive { (ctx, msg) =>
-      // val domain event handlers
       val itemStateHandlers: ItemStateHandlers = ItemStateHandlers(messageBrokerActor, ctx.self)
       msg match {
         case RaiseAlarm(storeId) =>
@@ -337,6 +333,15 @@ object DittoActor extends SprayJsonSupport {
             s"${dittoConfig.getString("namespace")}:antiTheftSystem-${storeId.value}",
             "raiseAlarm",
             None,
+            None
+          )
+          Behaviors.same[DittoCommand]
+        case ShowItemData(store, name, description, amount, currency) =>
+          sendMessage(
+            client,
+            s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}",
+            "showItemData",
+            Some(JsonObject.of(JsObject("name" -> name.toJson, "description" -> description.toJson, "amount" -> amount.toJson, "currency" -> currency.toJson))),
             None
           )
           Behaviors.same[DittoCommand]
