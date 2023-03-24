@@ -25,9 +25,9 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import com.typesafe.config.{Config, ConfigFactory}
 import eu.timepit.refined.auto.autoUnwrap
 import stores.application.actors.DittoActor
-import stores.application.actors.commands.DittoCommand.{ItemInsertedIntoDropSystem, ItemReturned, RaiseAlarm}
+import stores.application.actors.commands.DittoCommand.{ItemInsertedIntoDropSystem, ItemReturned, RaiseAlarm, ShowItemData}
 import stores.application.actors.commands.RootCommand.Startup
-import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand}
+import stores.application.actors.commands.{Currency, DittoCommand, MessageBrokerCommand, RootCommand}
 import stores.store.entities.Store
 import stores.application.routes.entities.Entity.ResultResponseEntity
 import stores.application.actors.DittoActor.DittoError
@@ -75,7 +75,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(9).getOrElse(fail()))
+  private val store: Store = Store(StoreId(29).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
 
@@ -162,6 +162,39 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
                 HttpStatus.OK,
                 ResultResponseEntity(()).toJson.compactPrint
               )
+            }
+          )
+      )
+    client
+      .live
+      .registerForMessage[String, String](
+        "ditto_actor_showItemData",
+        "showItemData",
+        classOf[String],
+        (msg: RepliableMessage[String, String]) =>
+          handleMessage(
+            msg,
+            (msg, store, correlationId, fields) => {
+              println("[test]1")
+              fields match {
+                case Seq(JsString(name), JsString(description), JsNumber(amount), JsString(currency)) =>
+                  println("[test]2")
+                  serviceProbe ! ShowItemData(store, name, description, amount.doubleValue, Currency.valueOf(currency))
+                  sendReply(
+                    msg,
+                    correlationId,
+                    HttpStatus.OK,
+                    ResultResponseEntity(()).toJson.compactPrint
+                  )
+                case _ =>
+                  println("[test]3")
+                  sendReply(
+                    msg,
+                    correlationId,
+                    HttpStatus.BAD_REQUEST,
+                    ErrorResponseEntity(DittoError).toJson.compactPrint
+                  )
+              }
             }
           )
       )
@@ -289,6 +322,19 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
         latch.await(1, TimeUnit.MINUTES)
         // stoutput
+        removeDropSystemThing(store)
+      }
+    }
+
+    describe("when ordering a drop system to display item information") {
+      it("should correctly send the information") {
+        val name = "Teddy"
+        val description = "A soft bear plushie."
+        val amount = 8.99
+        val currency = Currency.EUR
+        createDropSystemThing(store)
+        dittoActor ! ShowItemData(store, name, description, amount, currency)
+        serviceProbe.expectMessage[DittoCommand](1.minutes, ShowItemData(store, name, description, amount, currency))
         removeDropSystemThing(store)
       }
     }

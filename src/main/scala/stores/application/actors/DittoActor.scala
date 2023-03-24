@@ -99,12 +99,13 @@ object DittoActor extends SprayJsonSupport {
     payload: Option[JsonObject],
     replyTo: Option[ActorRef[Validated[Unit]]]
   ): Unit = {
+    println(s"[sendMessage] thingId:${thingId}, subject=${subject}, payload=${payload.getOrElse("_").toString}")
     val message: MessageSender.SetPayloadOrSend[JsonObject] =
       client
         .live()
         .forId(ThingId.of(thingId))
         .message()
-        .to() // message to device = should trigger action
+        .to() // message to device
         .subject(subject)
     (payload, replyTo) match {
       case (Some(p), Some(r)) => message.payload(p).send(classOf[String], responseHandler(r))
@@ -337,11 +338,12 @@ object DittoActor extends SprayJsonSupport {
           )
           Behaviors.same[DittoCommand]
         case ShowItemData(store, name, description, amount, currency) =>
+          println(s"[DITTO INCOMING!!] ${name}, ${description}, ${amount}, ${currency.toString}")
           sendMessage(
             client,
             s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}",
             "showItemData",
-            Some(JsonObject.of(JsObject("name" -> name.toJson, "description" -> description.toJson, "amount" -> amount.toJson, "currency" -> currency.toJson))),
+            Some(JsonObject.of(JsObject("name" -> name.toJson, "description" -> description.toJson, "amount" -> amount.toJson, "currency" -> currency.toString.toJson).compactPrint)),
             None
           )
           Behaviors.same[DittoCommand]

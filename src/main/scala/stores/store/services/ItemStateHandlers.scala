@@ -7,10 +7,8 @@
 package io.github.pervasivecats
 package stores.store.services
 
-import io.github.pervasivecats.stores.application.actors.commands.DittoCommand.RaiseAlarm
-
+import stores.application.actors.commands.DittoCommand.RaiseAlarm
 import akka.actor.typed.ActorRef
-
 import stores.application.actors.commands.MessageBrokerCommand
 import stores.store.domainevents.{CatalogItemLiftingRegistered, ItemDetected, ItemInsertedInDropSystem, ItemReturned}
 import stores.application.actors.commands.DittoCommand
