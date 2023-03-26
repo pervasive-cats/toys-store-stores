@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ShelvingGroupId, ShelvingId, StoreId, ShelfId}
 
 import scala.jdk.OptionConverters.RichOptional
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
@@ -40,6 +40,7 @@ import org.eclipse.ditto.client.messaging.{AuthenticationProviders, MessagingPro
 import org.eclipse.ditto.client.options.Options
 import spray.json.DefaultJsonProtocol.IntJsonFormat
 import org.eclipse.ditto.json.JsonObject
+import org.eclipse.ditto.json.JsonArray
 import org.eclipse.ditto.messages.model.MessageDirection
 import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.funspec.AnyFunSpec
@@ -77,9 +78,11 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(42).getOrElse(fail()))
+  private val store: Store = Store(StoreId(56).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
+  private val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(7).getOrElse(fail())
+  private val shelvingId: ShelvingId = ShelvingId(7).getOrElse(fail())
 
   private def sendReply(
     message: RepliableMessage[String, String],
@@ -90,11 +93,19 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
 
   private def handleMessage(
     message: RepliableMessage[String, String],
-    messageHandler: (RepliableMessage[String, String], Store, String, Seq[JsValue]) => Unit,
+    messageHandler: (
+      RepliableMessage[String, String],
+      Store,
+      Option[ShelvingGroupId],
+      Option[ShelvingId],
+      String,
+      Seq[JsValue]
+    ) => Unit,
     payloadFields: String*
   ): Unit = {
     val thingIdMatcherAntiTheftSystem: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
     val thingIdMatcherDropSystem: Regex = "dropSystem-(?<store>[0-9]+)".r
+    val thingIdMatcherShelving: Regex = "shelving-(?<store>[0-9]+)-(?<shelvingGroup>[0-9]+)-(?<shelving>[0-9]+)".r
     (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
       case (MessageDirection.TO, thingIdMatcherAntiTheftSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
@@ -103,6 +114,8 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             messageHandler(
               message,
               Store(storeId),
+              None,
+              None,
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -114,6 +127,26 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             messageHandler(
               message,
               Store(storeId),
+              None,
+              None,
+              correlationId,
+              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+            )
+        )
+      case (MessageDirection.TO, thingIdMatcherShelving(store, shelvingGroup, shelving), Some(correlationId))
+           if store.toLongOption.isDefined && shelvingGroup.toLongOption.isDefined && shelving.toLongOption.isDefined =>
+        (for {
+          s <- StoreId(store.toLong)
+          sg <- ShelvingGroupId(shelvingGroup.toLong)
+          sh <- ShelvingId(shelving.toLong)
+        } yield (s, sg, sh)).fold(
+          error => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, ErrorResponseEntity(error).toJson.compactPrint),
+          (s, sg, sh) =>
+            messageHandler(
+              message,
+              Store(s),
+              Some(sg),
+              Some(sh),
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -168,7 +201,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         (msg: RepliableMessage[String, String]) =>
           handleMessage(
             msg,
-            (msg, store, correlationId, _) => {
+            (msg, store, _, _, correlationId, _) => {
               serviceProbe ! RaiseAlarm(store.storeId)
               sendReply(
                 msg,
@@ -188,7 +221,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         (msg: RepliableMessage[String, String]) =>
           handleMessage(
             msg,
-            (msg, store, correlationId, fields) =>
+            (msg, store, _, _, correlationId, fields) =>
               fields match {
                 case Seq(JsNumber(amount), JsString(currency), JsString(description), JsString(name)) =>
                   serviceProbe ! ShowItemData(store, name, description, amount.doubleValue, Currency.valueOf(currency))
@@ -224,6 +257,11 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private def dropSystemThingId(store: Store): ThingId =
     ThingId.of(s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}")
 
+  private def shelvingThingId(store: Store, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId): ThingId =
+    ThingId.of(
+      s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}"
+    )
+
   private def createAntiTheftSystemThing(store: Store): Unit = createThing(
     antiTheftSystemThingId(store),
     "thingModelAntiTheftSystem",
@@ -239,6 +277,46 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
     JsonObject
       .newBuilder
       .set("store", store.storeId.value: Long)
+      .build
+  )
+
+  private val defaultShelves: JsonArray = JsonArray
+    .newBuilder()
+    .add(
+      JsonObject
+        .newBuilder()
+        .set("shelfId", 1)
+        .set("itemRows", JsonArray.newBuilder().add(1, 2, 3).build)
+        .build
+    )
+    .add(
+      JsonObject
+        .newBuilder()
+        .set("shelfId", 2)
+        .set("itemRows", JsonArray.newBuilder().add(1, 2, 3).build)
+        .build
+    )
+    .add(
+      JsonObject
+        .newBuilder()
+        .set("shelfId", 3)
+        .set("itemRows", JsonArray.newBuilder().add(1, 2, 3).build)
+        .build
+    )
+    .build
+
+  private def createShelvingThing(store: Store, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId): Unit = createThing(
+    shelvingThingId(store, shelvingGroupId, shelvingId),
+    "thingModelShelving",
+    JsonObject
+      .newBuilder
+      .set("storeId", store.storeId.value: Long)
+      .set("shelvingGroupId", shelvingGroupId.value: Long)
+      .set("id", shelvingId.value: Long)
+      .set(
+        "shelves",
+        defaultShelves
+      )
       .build
   )
 
@@ -263,6 +341,10 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private def removeAntiTheftSystemThing(store: Store): Unit = removeThing(antiTheftSystemThingId(store))
 
   private def removeDropSystemThing(store: Store): Unit = removeThing(dropSystemThingId(store))
+
+  private def removeShelvingThing(store: Store, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId): Unit = removeThing(
+    shelvingThingId(store, shelvingGroupId, shelvingId)
+  )
 
   private def removeThing(thingId: ThingId): Unit =
     maybeClient
@@ -358,6 +440,24 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         dittoActor ! ShowItemData(store, name, description, amount, currency)
         serviceProbe.expectMessage[DittoCommand](1.minutes, ShowItemData(store, name, description, amount, currency))
         removeDropSystemThing(store)
+      }
+    }
+
+    describe("when it receives a notification that an item has been lifted from a specific row of items of a shelf") {
+      it("should handle said event") {
+        val latch: CountDownLatch = CountDownLatch(1)
+        createShelvingThing(store, shelvingGroupId, shelvingId)
+        maybeClient
+          .getOrElse(fail())
+          .live
+          .message[String]
+          .from(shelvingThingId(store, shelvingGroupId, shelvingId))
+          .subject("catalogItemLiftingRegistered")
+          .payload(JsObject("shelfId" -> 40.toJson, "itemsRowId" -> 4.toJson).compactPrint)
+          .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
+        latch.await(1, TimeUnit.MINUTES)
+        // stoutput
+        removeShelvingThing(store, shelvingGroupId, shelvingId)
       }
     }
   }
