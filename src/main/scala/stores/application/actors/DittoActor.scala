@@ -439,6 +439,68 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
+        case AddShelf(store, shelvingGroupId, shelvingId, shelfId) =>
+          sendMessage(
+            client,
+            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            "addShelf",
+            Some(
+              JsonObject.of(
+                JsObject(
+                  "shelfId" -> shelfId.value.toLong.toJson
+                ).compactPrint
+              )
+            ),
+            None
+          )
+          Behaviors.same[DittoCommand]
+        case RemoveShelf(store, shelvingGroupId, shelvingId, shelfId) =>
+          sendMessage(
+            client,
+            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            "removeShelf",
+            Some(
+              JsonObject.of(
+                JsObject(
+                  "shelfId" -> shelfId.value.toLong.toJson
+                ).compactPrint
+              )
+            ),
+            None
+          )
+          Behaviors.same[DittoCommand]
+        case AddItemsRow(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+          sendMessage(
+            client,
+            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            "addItemsRow",
+            Some(
+              JsonObject.of(
+                JsObject(
+                  "shelfId" -> shelfId.value.toLong.toJson,
+                  "itemsRowId" -> itemsRowId.value.toLong.toJson
+                ).compactPrint
+              )
+            ),
+            None
+          )
+          Behaviors.same[DittoCommand]
+        case RemoveItemsRow(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+          sendMessage(
+            client,
+            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            "removeItemsRow",
+            Some(
+              JsonObject.of(
+                JsObject(
+                  "shelfId" -> shelfId.value.toLong.toJson,
+                  "itemsRowId" -> itemsRowId.value.toLong.toJson
+                ).compactPrint
+              )
+            ),
+            None
+          )
+          Behaviors.same[DittoCommand]
         case ItemDetected(store, catalogItem, itemId) =>
           itemStateHandlers.onItemDetected(ItemDetectedEvent(itemId, catalogItem, store.storeId))
           Behaviors.same[DittoCommand]

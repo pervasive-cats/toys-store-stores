@@ -42,4 +42,26 @@ object DittoCommand {
     shelfId: ShelfId,
     itemsRowId: ItemsRowId
   ) extends DittoCommand
+
+  final case class AddShelf(store: Store, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId)
+    extends DittoCommand
+
+  final case class RemoveShelf(store: Store, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId)
+    extends DittoCommand
+
+  final case class AddItemsRow(
+    store: Store,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ) extends DittoCommand
+
+  final case class RemoveItemsRow(
+    store: Store,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ) extends DittoCommand
 }
