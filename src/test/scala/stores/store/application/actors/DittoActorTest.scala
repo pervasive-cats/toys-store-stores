@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import stores.store.valueobjects.{CatalogItem, ItemId, ShelvingGroupId, ShelvingId, StoreId, ShelfId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 import scala.jdk.OptionConverters.RichOptional
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
@@ -25,7 +25,13 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import com.typesafe.config.{Config, ConfigFactory}
 import eu.timepit.refined.auto.autoUnwrap
 import stores.application.actors.DittoActor
-import stores.application.actors.commands.DittoCommand.{ItemInsertedIntoDropSystem, ItemReturned, RaiseAlarm, ShowItemData}
+import stores.application.actors.commands.DittoCommand.{
+  AddShelf,
+  ItemInsertedIntoDropSystem,
+  ItemReturned,
+  RaiseAlarm,
+  ShowItemData
+}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{Currency, DittoCommand, MessageBrokerCommand, RootCommand}
 import stores.store.entities.Store
@@ -78,7 +84,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(56).getOrElse(fail()))
+  private val store: Store = Store(StoreId(61).getOrElse(fail()))
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
   private val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(7).getOrElse(fail())
@@ -245,6 +251,41 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             "name"
           )
       )
+    client
+      .live
+      .registerForMessage[String, String](
+        "ditto_actor_addShelf",
+        "addShelf",
+        classOf[String],
+        (msg: RepliableMessage[String, String]) =>
+          handleMessage(
+            msg,
+            (msg, store, shelvingGroupId, shelvingId, correlationId, fields) =>
+              fields match {
+                case Seq(JsNumber(shelfId)) =>
+                  serviceProbe ! AddShelf(
+                    store,
+                    shelvingGroupId.getOrElse(fail()),
+                    shelvingId.getOrElse(fail()),
+                    ShelfId(shelfId.toLong).getOrElse(fail())
+                  )
+                  sendReply(
+                    msg,
+                    correlationId,
+                    HttpStatus.OK,
+                    ResultResponseEntity(()).toJson.compactPrint
+                  )
+                case _ =>
+                  sendReply(
+                    msg,
+                    correlationId,
+                    HttpStatus.BAD_REQUEST,
+                    ErrorResponseEntity(DittoError).toJson.compactPrint
+                  )
+              },
+            "shelfId"
+          )
+      )
     testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dittoConfig))
     maybeClient = Some(client)
   }
@@ -366,7 +407,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
         rootActorProbe.expectMessage(60.seconds, Startup(true))
       }
     }
-
+    
     describe("when it receives a notification that an item is near an anti-theft system") {
       it("should sound the alarm if the item is not in cart") {
         val latch: CountDownLatch = CountDownLatch(1)
@@ -457,6 +498,16 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
         latch.await(1, TimeUnit.MINUTES)
         // stoutput
+        removeShelvingThing(store, shelvingGroupId, shelvingId)
+      }
+    }
+
+    describe("when adding a shelf to a specific shelving") {
+      it("should get added") {
+        val shelfId: ShelfId = ShelfId(1).getOrElse(fail())
+        createShelvingThing(store, shelvingGroupId, shelvingId)
+        dittoActor ! AddShelf(store, shelvingGroupId, shelvingId, shelfId)
+        serviceProbe.expectMessage[DittoCommand](1.minutes, AddShelf(store, shelvingGroupId, shelvingId, shelfId))
         removeShelvingThing(store, shelvingGroupId, shelvingId)
       }
     }
