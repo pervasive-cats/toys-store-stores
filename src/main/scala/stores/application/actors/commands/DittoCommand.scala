@@ -10,7 +10,7 @@ package stores.application.actors.commands
 import org.eclipse.ditto.client.DittoClient
 
 import stores.store.entities.Store
-import stores.store.valueobjects.{CatalogItem, ItemId, StoreId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 enum Currency {
   case EUR, BGP, USD, CHF
@@ -34,4 +34,12 @@ object DittoCommand {
 
   final case class ShowItemData(store: Store, name: String, description: String, amount: Double, currency: Currency)
     extends DittoCommand
+
+  final case class CatalogItemLiftingRegistered(
+    store: Store,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    itemsRowId: ItemsRowId
+  ) extends DittoCommand
 }

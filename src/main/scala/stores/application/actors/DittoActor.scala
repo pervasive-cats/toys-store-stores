@@ -56,12 +56,13 @@ import stores.application.actors.commands.DittoCommand.*
 import AnyOps.===
 import stores.store.Repository.StoreNotFound
 import stores.store.entities.Store
-import stores.store.valueobjects.{CatalogItem, ItemId, ShelvingGroupId, ShelvingId, StoreId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ShelfId, ShelvingGroupId, ShelvingId, StoreId, ItemsRowId}
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.store.domainevents.ItemInsertedInDropSystem as ItemInsertedInDropSystemEvent
 import stores.store.domainevents.ItemDetected as ItemDetectedEvent
 import stores.store.domainevents.ItemReturned as ItemReturnedEvent
+import stores.store.domainevents.CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent
 import stores.store.services.ItemStateHandlers
 import stores.application.actors.commands.{DittoCommand, RootCommand, StoreServerCommand}
 
@@ -188,7 +189,7 @@ object DittoActor extends SprayJsonSupport {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null"))
+  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null", "org.wartremover.warts.OptionPartial"))
   def apply(
     root: ActorRef[RootCommand],
     messageBrokerActor: ActorRef[MessageBrokerCommand],
@@ -348,6 +349,52 @@ object DittoActor extends SprayJsonSupport {
                       "itemId"
                     )
                 )
+              client
+                .live()
+                .registerForMessage[String, String](
+                  "ditto_actor_catalogItemLiftingRegistered",
+                  "catalogItemLiftingRegistered",
+                  classOf[String],
+                  (msg: RepliableMessage[String, String]) =>
+                    handleMessage(
+                      msg,
+                      (msg, store, shelvingGroupId, shelvingId, correlationId, fields) =>
+                        fields match {
+                          case Seq(JsNumber(shelfId), JsNumber(itemsRowId))
+                               if shelfId.isValidLong && itemsRowId.isValidLong
+                               && shelvingGroupId.isDefined && shelvingId.isDefined =>
+                            (for {
+                              shelfId <- ShelfId(shelfId.longValue)
+                              itemsRowId <- ItemsRowId(itemsRowId.longValue)
+                            } yield ctx.self ! CatalogItemLiftingRegistered(
+                              store,
+                              shelvingGroupId.get,
+                              shelvingId.get,
+                              shelfId,
+                              itemsRowId
+                            )).fold(
+                              e =>
+                                sendReply(
+                                  msg,
+                                  correlationId,
+                                  HttpStatus.BAD_REQUEST,
+                                  Some(ErrorResponseEntity(e).toJson.compactPrint)
+                                ),
+                              _ =>
+                                sendReply(msg, correlationId, HttpStatus.OK, Some(ResultResponseEntity(()).toJson.compactPrint))
+                            )
+                          case _ =>
+                            sendReply(
+                              msg,
+                              correlationId,
+                              HttpStatus.BAD_REQUEST,
+                              Some(ErrorResponseEntity(DittoError).toJson.compactPrint)
+                            )
+                        },
+                      "shelfId",
+                      "itemsRowId"
+                    )
+                )
               onDittoMessagesIncoming(root, client, messageBrokerActor, dittoConfig)
             case _ => Behaviors.unhandled[DittoCommand]
           }
@@ -400,6 +447,11 @@ object DittoActor extends SprayJsonSupport {
           Behaviors.same[DittoCommand]
         case ItemReturned(store, catalogItem, itemId) =>
           itemStateHandlers.onItemReturned(ItemReturnedEvent(catalogItem, itemId, store.storeId))
+          Behaviors.same[DittoCommand]
+        case CatalogItemLiftingRegistered(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+          itemStateHandlers.onCatalogItemLiftingRegistered(
+            CatalogItemLiftingRegisteredEvent(store.storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+          )
           Behaviors.same[DittoCommand]
         case _ => Behaviors.unhandled[DittoCommand]
       }
