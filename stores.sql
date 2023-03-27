@@ -1,11 +1,11 @@
-CREATE TABLE IF NOT EXISTS public.stores
+CREATE TABLE IF NOT EXISTS public.items_rows
 (
-    id bigserial NOT NULL,
+    store_id bigint NOT NULL,
     shelving_group_id bigint NOT NULL,
     shelving_id bigint NOT NULL,
     shelf_id bigint NOT NULL,
     items_row_id bigint NOT NULL,
     catalog_item bigint NOT NULL,
-    item_id bigint NOT NULL,
-    CONSTRAINT stores_pkey PRIMARY KEY (id)
-);
+    "count" int NOT NULL,
+    CONSTRAINT items_rows_pkey PRIMARY KEY (store_id, shelving_group_id, shelving_id, shelf_id, items_row_id)
+)
