@@ -76,7 +76,7 @@ class StoreTest extends AnyFunSpec {
         storeC.layout shouldBe Seq[ShelvingGroup](shelvingGroupB)
       }
     }
-    
+
     val shelvingGroupIdB: ShelvingGroupId = ShelvingGroupId(12).getOrElse(fail())
     val shelvingGroupB: ShelvingGroup = ShelvingGroup(shelvingGroupIdB, Seq[Shelving](shelving))
     val storeB = store.addShelvingGroup(shelvingGroupB)
