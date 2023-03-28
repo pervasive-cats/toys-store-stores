@@ -7,6 +7,8 @@
 package io.github.pervasivecats
 package stores.store
 
+import javax.sql.DataSource
+
 import scala.util.Try
 
 import com.typesafe.config.Config
@@ -14,25 +16,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import eu.timepit.refined.auto.given
 import io.getquill.*
-import io.getquill.autoQuote
 
-import stores.store.valueobjects.{
-  CatalogItem,
-  Count,
-  ItemId,
-  ItemsRow,
-  ItemsRowId,
-  Shelf,
-  ShelfId,
-  Shelving,
-  ShelvingGroup,
-  ShelvingGroupId,
-  ShelvingId,
-  StoreId
-}
+import stores.store.valueobjects.*
 import stores.store.entities.Store
 import stores.{Validated, ValidationError}
-import AnyOps.{!==, ===}
+import AnyOps.*
 
 trait Repository {
 
@@ -47,11 +35,6 @@ object Repository {
   case object StoreNotFound extends ValidationError {
 
     override val message: String = "No store found for the id that was provided"
-  }
-
-  case object StoreAlreadyPresent extends ValidationError {
-
-    override val message: String = "The store was already registered"
   }
 
   case object RepositoryOperationFailed extends ValidationError {
@@ -96,6 +79,8 @@ object Repository {
             Right[ValidationError, Seq[(ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId, CatalogItem, Count)]](s :+ i)
           case (Right(_), Left(v)) =>
             Left[ValidationError, Seq[(ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId, CatalogItem, Count)]](v)
+          case (Left(StoreNotFound), Right(i)) =>
+            Right[ValidationError, Seq[(ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId, CatalogItem, Count)]](Seq(i))
           case (Left(v), _) =>
             Left[ValidationError, Seq[(ShelvingGroupId, ShelvingId, ShelfId, ItemsRowId, CatalogItem, Count)]](v)
         }
@@ -123,7 +108,6 @@ object Repository {
               )
           )
         )
-
     }
 
     override def updateLayout(store: Store, layout: Seq[ShelvingGroup]): Validated[Unit] = protectFromException {
@@ -160,5 +144,5 @@ object Repository {
     }
   }
 
-  def apply(config: Config): Repository = PostgresRepository(PostgresJdbcContext[SnakeCase](SnakeCase, config))
+  def apply(dataSource: DataSource): Repository = PostgresRepository(PostgresJdbcContext[SnakeCase](SnakeCase, dataSource))
 }
