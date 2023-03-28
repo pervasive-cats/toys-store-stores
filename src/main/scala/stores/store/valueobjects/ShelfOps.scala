@@ -9,21 +9,21 @@ package stores.store.valueobjects
 
 trait ShelfOps[A <: Shelf] {
 
-  def addItemsRow(shelf: Shelf, itemsRow: ItemsRow): Shelf
+  def addItemsRow(shelf: A, itemsRow: ItemsRow): A
 
-  def removeItemsRow(shelf: Shelf, itemsRowId: ItemsRowId): Shelf
+  def removeItemsRow(shelf: A, itemsRowId: ItemsRowId): A
 
-  def updateItemsRow(shelf: Shelf, itemsRow: ItemsRow): Shelf
+  def updateItemsRow(shelf: A, itemsRow: ItemsRow): A
 }
 
 object ShelfOps {
 
   extension [A <: Shelf: ShelfOps](shelf: A) {
 
-    def addItemsRow(itemsRow: ItemsRow) = implicitly[ShelfOps[A]].addItemsRow(shelf, itemsRow)
+    def addItemsRow(itemsRow: ItemsRow): A = implicitly[ShelfOps[A]].addItemsRow(shelf, itemsRow)
 
-    def removeItemsRow(itemsRowId: ItemsRowId) = implicitly[ShelfOps[A]].removeItemsRow(shelf, itemsRowId)
+    def removeItemsRow(itemsRowId: ItemsRowId): A = implicitly[ShelfOps[A]].removeItemsRow(shelf, itemsRowId)
 
-    def updateItemsRow(itemsRow: ItemsRow) = implicitly[ShelfOps[A]].updateItemsRow(shelf, itemsRow)
+    def updateItemsRow(itemsRow: ItemsRow): A = implicitly[ShelfOps[A]].updateItemsRow(shelf, itemsRow)
   }
 }

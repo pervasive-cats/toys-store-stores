@@ -7,8 +7,6 @@
 package io.github.pervasivecats
 package stores.store.domainevents
 
-import scala.language.postfixOps
-
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 
