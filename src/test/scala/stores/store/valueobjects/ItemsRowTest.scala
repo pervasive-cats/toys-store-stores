@@ -31,10 +31,8 @@ class ItemsRowTest extends AnyFunSpec {
     describe("when update with a new catalog item and a count") {
       it("should contain them") {
         val itemsRow: ItemsRow = ItemsRow(itemsRowId, catalogItem, count)
-
         val catalogItemB: CatalogItem = CatalogItem(11).getOrElse(fail())
         val countB: Count = Count(12).getOrElse(fail())
-
         val itemsRowB: ItemsRow = itemsRow.updated(catalogItemB, countB)
         itemsRowB.itemsRowId shouldBe itemsRowId
         itemsRowB.catalogItem shouldBe catalogItemB
@@ -42,5 +40,4 @@ class ItemsRowTest extends AnyFunSpec {
       }
     }
   }
-
 }

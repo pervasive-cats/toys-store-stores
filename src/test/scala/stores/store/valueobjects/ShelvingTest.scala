@@ -34,11 +34,9 @@ class ShelvingTest extends AnyFunSpec {
     describe("when add a shelf") {
       it("should be added") {
         val shelving: Shelving = Shelving(shelvingId, Seq[Shelf](shelf))
-
         val shelfIdB: ShelfId = ShelfId(15).getOrElse(fail())
         val shelfB: Shelf = Shelf(shelfIdB, Seq[ItemsRow](itemsRow))
         val shelvingB: Shelving = shelving.addShelf(shelfB)
-
         shelvingB.shelvingId shouldBe shelvingId
         shelvingB.shelves shouldBe Seq[Shelf](shelf, shelfB)
       }
@@ -47,13 +45,10 @@ class ShelvingTest extends AnyFunSpec {
     describe("when remove a shelf") {
       it("should be removed") {
         val shelving: Shelving = Shelving(shelvingId, Seq[Shelf](shelf))
-
         val shelfIdB: ShelfId = ShelfId(15).getOrElse(fail())
         val shelfB: Shelf = Shelf(shelfIdB, Seq[ItemsRow](itemsRow))
         val shelvingB: Shelving = shelving.addShelf(shelfB)
-
         val shelvingC: Shelving = shelvingB.removeShelf(shelf.shelfId)
-
         shelvingC.shelvingId shouldBe shelvingId
         shelvingC.shelves shouldBe Seq[Shelf](shelfB)
       }
@@ -62,12 +57,10 @@ class ShelvingTest extends AnyFunSpec {
     describe("when update a shelf") {
       it("should be updated") {
         val shelving: Shelving = Shelving(shelvingId, Seq[Shelf](shelf))
-
         val itemsRowIdB: ItemsRowId = ItemsRowId(12).getOrElse(fail())
         val itemsRowB: ItemsRow = ItemsRow(itemsRowIdB, catalogItem, count)
         val shelfB: Shelf = Shelf(shelfId, Seq[ItemsRow](itemsRowB))
         val shelvingB: Shelving = shelving.updateShelf(shelfB)
-
         shelvingB.shelvingId shouldBe shelvingId
         shelvingB.shelves shouldBe Seq[Shelf](shelfB)
       }

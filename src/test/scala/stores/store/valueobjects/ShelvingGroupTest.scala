@@ -36,11 +36,9 @@ class ShelvingGroupTest extends AnyFunSpec {
     describe("when add a shelving") {
       it("should be added") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, Seq[Shelving](shelving))
-
         val shelvingIdB: ShelvingId = ShelvingId(11).getOrElse(fail())
         val shelvingB: Shelving = Shelving(shelvingIdB, Seq[Shelf](shelf))
         val shelvingGroupB: ShelvingGroup = shelvingGroup.addShelving(shelvingB)
-
         shelvingGroupB.shelvingGroupId shouldBe shelvingGroupId
         shelvingGroupB.shelvings shouldBe Seq[Shelving](shelving, shelvingB)
       }
@@ -49,13 +47,10 @@ class ShelvingGroupTest extends AnyFunSpec {
     describe("when remove a shelving") {
       it("should be removed") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, Seq[Shelving](shelving))
-
         val shelvingIdB: ShelvingId = ShelvingId(11).getOrElse(fail())
         val shelvingB: Shelving = Shelving(shelvingIdB, Seq[Shelf](shelf))
         val shelvingGroupB: ShelvingGroup = shelvingGroup.addShelving(shelvingB)
-
         val shelvingGroupC: ShelvingGroup = shelvingGroupB.removeShelving(shelvingId)
-
         shelvingGroupC.shelvingGroupId shouldBe shelvingGroupId
         shelvingGroupC.shelvings shouldBe Seq[Shelving](shelvingB)
       }
@@ -64,12 +59,10 @@ class ShelvingGroupTest extends AnyFunSpec {
     describe("when update a shelving") {
       it("should be updated") {
         val shelvingGroup: ShelvingGroup = ShelvingGroup(shelvingGroupId, Seq[Shelving](shelving))
-
         val shelfIdB: ShelfId = ShelfId(55).getOrElse(fail())
         val shelfB: Shelf = Shelf(shelfIdB, Seq[ItemsRow](itemsRow))
         val shelvingB: Shelving = Shelving(shelvingId, Seq[Shelf](shelfB))
         val shelvingGroupB = shelvingGroup.updateShelving(shelvingB)
-
         shelvingGroupB.shelvingGroupId shouldBe shelvingGroupId
         shelvingGroupB.shelvings shouldBe Seq[Shelving](shelvingB)
       }

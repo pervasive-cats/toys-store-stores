@@ -20,7 +20,15 @@ trait Store {
 
 object Store {
 
-  final private case class StoreImpl(storeId: StoreId, layout: Seq[ShelvingGroup]) extends Store
+  final private case class StoreImpl(storeId: StoreId, layout: Seq[ShelvingGroup]) extends Store {
+
+    override def equals(obj: Any): Boolean = obj match {
+      case store: Store => store.storeId.value === storeId.value
+      case _ => false
+    }
+
+    override def hashCode(): Int = storeId.##
+  }
 
   given StoreOps[Store] with {
 

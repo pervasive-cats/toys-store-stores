@@ -27,7 +27,6 @@ trait Repository {
   def findById(storeId: StoreId): Validated[Store]
 
   def updateLayout(store: Store, layout: Seq[ShelvingGroup]): Validated[Unit]
-
 }
 
 object Repository {
