@@ -78,7 +78,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
 
-  private val store: Store = Store(StoreId(2).getOrElse(fail()))
+  private val store: Store = Store(StoreId(2).getOrElse(fail()), Seq.empty)
   private val catalogItem: CatalogItem = CatalogItem(1).getOrElse(fail())
   private val itemId: ItemId = ItemId(1).getOrElse(fail())
   private val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(7).getOrElse(fail())
@@ -140,7 +140,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           storeId =>
             messageHandler(
               message,
-              Store(storeId),
+              Store(storeId, Seq.empty),
               None,
               None,
               correlationId,
@@ -153,7 +153,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           storeId =>
             messageHandler(
               message,
-              Store(storeId),
+              Store(storeId, Seq.empty),
               None,
               None,
               correlationId,
@@ -171,7 +171,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           (s, sg, sh) =>
             messageHandler(
               message,
-              Store(s),
+              Store(s, Seq.empty),
               Some(sg),
               Some(sh),
               correlationId,

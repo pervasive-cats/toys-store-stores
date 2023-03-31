@@ -1,3 +1,35 @@
+# [1.0.0-beta.4](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2023-03-28)
+
+
+### Bug Fixes
+
+* add equality by id in store entity ([b502980](https://github.com/pervasive-cats/toys-store-stores/commit/b5029804c3ff66ecb4a936ae5206310553135ffc))
+* fix minor issues with generic types and postfix ops ([5f5ee02](https://github.com/pervasive-cats/toys-store-stores/commit/5f5ee021c506b9bf75d77ef1a1acb138ffaa5376))
+* modified the type from list to seq in the itemsRow parameter in Shelf ([dd9af61](https://github.com/pervasive-cats/toys-store-stores/commit/dd9af61036a4e4ddc2740e56a6020d2afc49c00a))
+* modified the type from list to seq of a parameter in shelving, shelving group and store ([e9b7a22](https://github.com/pervasive-cats/toys-store-stores/commit/e9b7a22d40d2cf34e3007b06f97b3fe2d21e3f2f))
+* setup repository for testing with containers, fix tests ([a5319b9](https://github.com/pervasive-cats/toys-store-stores/commit/a5319b9e50150f9431d951fa79d84e053be82187))
+* update sql creation script ([94f7fb5](https://github.com/pervasive-cats/toys-store-stores/commit/94f7fb5a0ad4f113fbd2e9d6d98125c297091925))
+* update updateShelvingGroup method in Store ([6df7815](https://github.com/pervasive-cats/toys-store-stores/commit/6df7815d0b1e82fd347e5a0558b9f4abdb5b60a2))
+
+
+### Features
+
+* add AnyOps ([7c72037](https://github.com/pervasive-cats/toys-store-stores/commit/7c7203780cabba63ed83fb86f3abd03fe95c8844))
+* add items row implementation and test ([725da35](https://github.com/pervasive-cats/toys-store-stores/commit/725da35514be40c24863755338e217b8d358861c))
+* add itemsrow update extension method and test ([de375fe](https://github.com/pervasive-cats/toys-store-stores/commit/de375fe1e41956dce5437b34ec830d4b146dbf6e))
+* add quill dependency ([8bbf26c](https://github.com/pervasive-cats/toys-store-stores/commit/8bbf26c3f1eed039bbd75257798cb7ba75ee6e5f))
+* add repository ([ca28689](https://github.com/pervasive-cats/toys-store-stores/commit/ca2868976b378d2fa89b35841ef7e2ed9443382a))
+* add shelf implementation and test ([d992c62](https://github.com/pervasive-cats/toys-store-stores/commit/d992c62632c829aae6b354ebebaccc0f6b8a42ec))
+* add shelf ops implementation and test ([e86b2de](https://github.com/pervasive-cats/toys-store-stores/commit/e86b2de9908a7f9e7f2bb07a4494ce34096d137f))
+* add shelving group implementation and test ([94ecdf0](https://github.com/pervasive-cats/toys-store-stores/commit/94ecdf026375ddf23dccf2ca0cf083b33cf78ab5))
+* add shelving group ops implementation and test ([8e28a91](https://github.com/pervasive-cats/toys-store-stores/commit/8e28a91eba23255fe080c97b828a10bcc9700426))
+* add shelving implementation and test ([8a27c64](https://github.com/pervasive-cats/toys-store-stores/commit/8a27c641b580f13faa9e618b4d82bd692553b689))
+* add shelving ops implementation and test ([0a026b6](https://github.com/pervasive-cats/toys-store-stores/commit/0a026b6ad1b1469007e7800b80af824162c5f676))
+* add sql table for stores ([6658eb7](https://github.com/pervasive-cats/toys-store-stores/commit/6658eb76e2f40c0bc3e1d2cbce1a53594792416f))
+* add store implementation ([dd56466](https://github.com/pervasive-cats/toys-store-stores/commit/dd564669437074a5b66ccf873596c9d0cbbaf73e))
+* add store test implementation ([850f1bf](https://github.com/pervasive-cats/toys-store-stores/commit/850f1bf1b0840cc0567529c3054f43595cb661dd))
+* update gitignore to ignore file with .semanticdb extension ([314311f](https://github.com/pervasive-cats/toys-store-stores/commit/314311f7df043622f57c98ed19ad03b25656d6df))
+
 # [1.0.0-beta.3](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2023-03-12)
 
 

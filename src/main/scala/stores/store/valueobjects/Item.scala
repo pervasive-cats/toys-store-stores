@@ -16,7 +16,7 @@ trait Item {
 
 object Item {
 
-  final case class ItemImpl(catalogItem: CatalogItem, id: ItemId) extends Item
+  final private case class ItemImpl(catalogItem: CatalogItem, id: ItemId) extends Item
 
   def apply(catalogItem: CatalogItem, id: ItemId): Item = ItemImpl(catalogItem, id)
 }

@@ -15,3 +15,17 @@ trait ItemsRow {
 
   val count: Count
 }
+
+object ItemsRow {
+
+  final private case class ItemsRowImpl(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count) extends ItemsRow
+
+  given ItemsRowOps[ItemsRow] with {
+
+    override def updated(itemsRow: ItemsRow, catalogItem: CatalogItem, count: Count): ItemsRow =
+      ItemsRowImpl(itemsRow.itemsRowId, catalogItem, count)
+  }
+
+  def apply(itemsRowId: ItemsRowId, catalogItem: CatalogItem, count: Count): ItemsRow =
+    ItemsRowImpl(itemsRowId, catalogItem, count)
+}

@@ -7,13 +7,28 @@
 package io.github.pervasivecats
 package stores.store.entities
 
+import stores.store.entities.Store
 import stores.store.valueobjects.{ShelvingGroup, ShelvingGroupId}
 
-trait StoreOps {
+trait StoreOps[A <: Store] {
 
-  def addShelvingGroup(shelvingGroup: ShelvingGroup): Store
+  def addShelvingGroup(store: A, shelvingGroup: ShelvingGroup): A
 
-  def removeShelvingGroup(shelvingGroupId: ShelvingGroupId): Store
+  def removeShelvingGroup(store: A, shelvingGroupId: ShelvingGroupId): A
 
-  def updateShelvingGroup(shelvingGroup: ShelvingGroup): Store
+  def updateShelvingGroup(store: A, shelvingGroup: ShelvingGroup): A
+}
+
+object StoreOps {
+
+  extension [A <: Store: StoreOps](store: A) {
+
+    def addShelvingGroup(shelvingGroup: ShelvingGroup): A = implicitly[StoreOps[A]].addShelvingGroup(store, shelvingGroup)
+
+    def removeShelvingGroup(shelvingGroupId: ShelvingGroupId): A =
+      implicitly[StoreOps[A]].removeShelvingGroup(store, shelvingGroupId)
+
+    def updateShelvingGroup(shelvingGroup: ShelvingGroup): A =
+      implicitly[StoreOps[A]].updateShelvingGroup(store, shelvingGroup)
+  }
 }

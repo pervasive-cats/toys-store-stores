@@ -145,7 +145,7 @@ object DittoActor extends SprayJsonSupport {
           storeId =>
             messageHandler(
               message,
-              Store(storeId),
+              Store(storeId, Seq.empty),
               None,
               None,
               correlationId,
@@ -159,7 +159,7 @@ object DittoActor extends SprayJsonSupport {
           storeId =>
             messageHandler(
               message,
-              Store(storeId),
+              Store(storeId, Seq.empty),
               None,
               None,
               correlationId,
@@ -178,7 +178,7 @@ object DittoActor extends SprayJsonSupport {
           (s, sg, sh) =>
             messageHandler(
               message,
-              Store(s),
+              Store(s, Seq.empty),
               Some(sg),
               Some(sh),
               correlationId,

@@ -7,19 +7,42 @@
 package io.github.pervasivecats
 package stores.store.entities
 
-import stores.store.valueobjects.{ShelvingGroup, StoreId}
+import AnyOps.*
+import stores.store.entities.StoreOps.*
+import stores.store.valueobjects.{ShelvingGroup, ShelvingGroupId, StoreId}
 
 trait Store {
 
   val storeId: StoreId
 
-  val layout: List[ShelvingGroup]
+  val layout: Seq[ShelvingGroup]
 }
 
 object Store {
 
-  private case class StoreImpl(storeId: StoreId, layout: List[ShelvingGroup]) extends Store
+  final private case class StoreImpl(storeId: StoreId, layout: Seq[ShelvingGroup]) extends Store {
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments", "scalafix:DisableSyntax.defaultArgs"))
-  def apply(storeId: StoreId, layout: List[ShelvingGroup] = List.empty): Store = StoreImpl(storeId, layout)
+    override def equals(obj: Any): Boolean = obj match {
+      case store: Store => store.storeId.value === storeId.value
+      case _ => false
+    }
+
+    override def hashCode(): Int = storeId.##
+  }
+
+  given StoreOps[Store] with {
+
+    override def addShelvingGroup(store: Store, shelvingGroup: ShelvingGroup): Store =
+      StoreImpl(store.storeId, store.layout ++ Seq[ShelvingGroup](shelvingGroup))
+
+    override def removeShelvingGroup(store: Store, shelvingGroupId: ShelvingGroupId): Store =
+      StoreImpl(store.storeId, store.layout.filter(_.shelvingGroupId !== shelvingGroupId))
+
+    override def updateShelvingGroup(store: Store, shelvingGroup: ShelvingGroup): Store =
+      store
+        .removeShelvingGroup(shelvingGroup.shelvingGroupId)
+        .addShelvingGroup(shelvingGroup)
+  }
+
+  def apply(storeId: StoreId, layout: Seq[ShelvingGroup]): Store = StoreImpl(storeId, layout)
 }

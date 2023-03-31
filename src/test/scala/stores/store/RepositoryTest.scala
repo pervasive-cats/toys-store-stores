@@ -7,96 +7,120 @@
 package io.github.pervasivecats
 package stores.store
 
-import scala.language.postfixOps
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 
+import com.dimafeng.testcontainers.JdbcDatabaseContainer.CommonParams
+import com.dimafeng.testcontainers.PostgreSQLContainer
+import com.dimafeng.testcontainers.scalatest.TestContainerForAll
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import io.getquill.JdbcContextConfig
 import org.scalatest.EitherValues.given
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
+import org.testcontainers.utility.DockerImageName
 
-import stores.store.Repository.RepositoryOperationFailed
+import stores.store.entities.Store
 import stores.store.valueobjects.*
+import stores.store.Repository.{RepositoryOperationFailed, StoreNotFound}
+import stores.store.entities.StoreOps.updateShelvingGroup
 
-class RepositoryTest extends AnyFunSpec {
+class RepositoryTest extends AnyFunSpec with TestContainerForAll {
 
-  describe("A Store") {
-    describe("after being added") {
+  private val timeout: FiniteDuration = 300.seconds
+
+  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(
+    dockerImageName = DockerImageName.parse("postgres:15.1"),
+    databaseName = "stores",
+    username = "test",
+    password = "test",
+    commonJdbcParams = CommonParams(timeout, timeout, Some("stores.sql"))
+  )
+
+  @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
+  private var maybeRepository: Option[Repository] = None
+
+  private val storeId: StoreId = StoreId(1).getOrElse(fail())
+  private val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
+  private val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
+  private val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
+  private val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
+  private val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
+  private val count: Count = Count(7).getOrElse(fail())
+  private val wrongStoreId: StoreId = StoreId(2).getOrElse(fail())
+
+  private val store: Store = Store(
+    storeId,
+    Seq(
+      ShelvingGroup(
+        shelvingGroupId,
+        Seq(Shelving(shelvingId, Seq(Shelf(shelfId, Seq(ItemsRow(itemsRowId, catalogItem, count))))))
+      )
+    )
+  )
+
+  override def afterContainersStart(containers: Containers): Unit = {
+    val repository: Repository = Repository(
+      JdbcContextConfig(
+        ConfigFactory
+          .load()
+          .getConfig("repository")
+          .withValue(
+            "dataSource.portNumber",
+            ConfigValueFactory.fromAnyRef(containers.container.getFirstMappedPort.intValue())
+          )
+      ).dataSource
+    )
+    maybeRepository = Some(repository)
+  }
+
+  describe("The default store") {
+    describe("after being added at database startup") {
       it("should be present") {
-        val repository: Repository = Repository()
-        val storeId: StoreId = StoreId(1).getOrElse(fail())
-        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
-        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
-        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
-        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
-        val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
-        repository.findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe (catalogItem, itemId)
+        maybeRepository.getOrElse(fail()).findById(storeId).value shouldBe store
       }
     }
 
-    describe("if never added") {
+    describe("if searched with the wrong identifier") {
       it("should not be present") {
-        val repository: Repository = Repository()
-        val storeId: StoreId = StoreId(1).getOrElse(fail())
-        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
-        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
-        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
-        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        repository
-          .findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+        maybeRepository
+          .getOrElse(fail())
+          .findById(wrongStoreId)
           .left
-          .value shouldBe RepositoryOperationFailed
+          .value shouldBe StoreNotFound
       }
     }
 
-    describe("after being added and then removed") {
-      it("should not be present") {
-        val repository: Repository = Repository()
-        val storeId: StoreId = StoreId(1).getOrElse(fail())
-        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
-        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
-        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
-        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
-        val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
-        repository.findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).value shouldBe (catalogItem, itemId)
-        repository.removeStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId).getOrElse(fail())
-        repository
-          .findStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
-          .left
-          .value shouldBe RepositoryOperationFailed
+    val updatedStore: Store = store.updateShelvingGroup(
+      ShelvingGroup(
+        shelvingGroupId,
+        Seq(Shelving(shelvingId, Seq(Shelf(shelfId, Seq(ItemsRow(itemsRowId, catalogItem, Count(100).getOrElse(fail())))))))
+      )
+    )
+
+    describe("after updating its store layout") {
+      it("should show the update") {
+        val repository: Repository = maybeRepository.getOrElse(fail())
+        repository.updateLayout(updatedStore, updatedStore.layout).value shouldBe ()
+        repository.findById(storeId).value shouldBe updatedStore
       }
     }
 
-    describe("after being removed but it were never added in the first place") {
+    describe("after updating its store layout with the wrong identifier") {
       it("should not be allowed") {
-        val repository: Repository = Repository()
-        val storeId: StoreId = StoreId(1).getOrElse(fail())
-        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
-        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
-        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
-        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        repository
-          .removeStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
-          .left
-          .value shouldBe RepositoryOperationFailed
-      }
-    }
-
-    describe("if added but it was already present") {
-      it("should not be added") {
-        val repository: Repository = Repository()
-        val storeId: StoreId = StoreId(1).getOrElse(fail())
-        val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(2).getOrElse(fail())
-        val shelvingId: ShelvingId = ShelvingId(3).getOrElse(fail())
-        val shelfId: ShelfId = ShelfId(4).getOrElse(fail())
-        val itemsRowId: ItemsRowId = ItemsRowId(5).getOrElse(fail())
-        val catalogItem: CatalogItem = CatalogItem(6).getOrElse(fail())
-        val itemId: ItemId = ItemId(7).getOrElse(fail())
-        repository.putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
-        repository
-          .putStore(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId, catalogItem, itemId)
+        val wrongStore: Store = Store(
+          wrongStoreId,
+          Seq(
+            ShelvingGroup(
+              shelvingGroupId,
+              Seq(Shelving(shelvingId, Seq(Shelf(shelfId, Seq(ItemsRow(itemsRowId, catalogItem, count))))))
+            )
+          )
+        )
+        maybeRepository
+          .getOrElse(fail())
+          .updateLayout(wrongStore, updatedStore.layout)
           .left
           .value shouldBe RepositoryOperationFailed
       }
