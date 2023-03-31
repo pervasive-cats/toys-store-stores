@@ -126,7 +126,7 @@ object DittoActor extends SprayJsonSupport {
     message: RepliableMessage[String, String],
     messageHandler: (
       RepliableMessage[String, String],
-      Store,
+      StoreId,
       Option[ShelvingGroupId],
       Option[ShelvingId],
       String,
@@ -145,7 +145,7 @@ object DittoActor extends SprayJsonSupport {
           storeId =>
             messageHandler(
               message,
-              Store(storeId, Seq.empty),
+              storeId,
               None,
               None,
               correlationId,
@@ -159,7 +159,7 @@ object DittoActor extends SprayJsonSupport {
           storeId =>
             messageHandler(
               message,
-              Store(storeId, Seq.empty),
+              storeId,
               None,
               None,
               correlationId,
@@ -169,18 +169,18 @@ object DittoActor extends SprayJsonSupport {
       case (MessageDirection.FROM, thingIdMatcherShelving(store, shelvingGroup, shelving), Some(correlationId))
            if store.toLongOption.isDefined && shelvingGroup.toLongOption.isDefined && shelving.toLongOption.isDefined =>
         (for {
-          s <- StoreId(store.toLong)
-          sg <- ShelvingGroupId(shelvingGroup.toLong)
-          sh <- ShelvingId(shelving.toLong)
-        } yield (s, sg, sh)).fold(
+          storeId <- StoreId(store.toLong)
+          shelvingGroupId <- ShelvingGroupId(shelvingGroup.toLong)
+          shelvingId <- ShelvingId(shelving.toLong)
+        } yield (storeId, shelvingGroupId, shelvingId)).fold(
           error =>
             sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(error).toJson.compactPrint)),
-          (s, sg, sh) =>
+          (storeId, shelvingGroupId, shelvingId) =>
             messageHandler(
               message,
-              Store(s, Seq.empty),
-              Some(sg),
-              Some(sh),
+              storeId,
+              Some(shelvingGroupId),
+              Some(shelvingId),
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -244,13 +244,13 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, _, _, correlationId, fields) =>
+                      (msg, storeId, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
                               k <- CatalogItem(catalogItem.longValue)
                               i <- ItemId(itemId.longValue)
-                            } yield ctx.self ! ItemDetected(store, k, i)).fold(
+                            } yield ctx.self ! ItemDetected(storeId, k, i)).fold(
                               e =>
                                 sendReply(
                                   msg,
@@ -282,13 +282,13 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, _, _, correlationId, fields) =>
+                      (msg, storeId, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
                               k <- CatalogItem(catalogItem.longValue)
                               i <- ItemId(itemId.longValue)
-                            } yield ctx.self ! ItemInsertedIntoDropSystem(store, k, i)).fold(
+                            } yield ctx.self ! ItemInsertedIntoDropSystem(storeId, k, i)).fold(
                               e =>
                                 sendReply(
                                   msg,
@@ -320,13 +320,13 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, _, _, correlationId, fields) =>
+                      (msg, storeId, _, _, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
                               k <- CatalogItem(catalogItem.longValue)
                               i <- ItemId(itemId.longValue)
-                            } yield ctx.self ! ItemReturned(store, k, i)).fold(
+                            } yield ctx.self ! ItemReturned(storeId, k, i)).fold(
                               e =>
                                 sendReply(
                                   msg,
@@ -358,7 +358,7 @@ object DittoActor extends SprayJsonSupport {
                   (msg: RepliableMessage[String, String]) =>
                     handleMessage(
                       msg,
-                      (msg, store, shelvingGroupId, shelvingId, correlationId, fields) =>
+                      (msg, storeId, shelvingGroupId, shelvingId, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(shelfId), JsNumber(itemsRowId))
                                if shelfId.isValidLong && itemsRowId.isValidLong
@@ -367,7 +367,7 @@ object DittoActor extends SprayJsonSupport {
                               shelfId <- ShelfId(shelfId.longValue)
                               itemsRowId <- ItemsRowId(itemsRowId.longValue)
                             } yield ctx.self ! CatalogItemLiftingRegistered(
-                              store,
+                              storeId,
                               shelvingGroupId.get,
                               shelvingId.get,
                               shelfId,
@@ -421,10 +421,10 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case ShowItemData(store, name, description, amount, currency) =>
+        case ShowItemData(storeId, name, description, amount, currency) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:dropSystem-${store.storeId.value}",
+            s"${dittoConfig.getString("namespace")}:dropSystem-${storeId.value}",
             "showItemData",
             Some(
               JsonObject.of(
@@ -439,10 +439,10 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case AddShelf(store, shelvingGroupId, shelvingId, shelfId) =>
+        case AddShelf(storeId, shelvingGroupId, shelvingId, shelfId) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            s"${dittoConfig.getString("namespace")}:shelving-${storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
             "addShelf",
             Some(
               JsonObject.of(
@@ -454,10 +454,10 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case RemoveShelf(store, shelvingGroupId, shelvingId, shelfId) =>
+        case RemoveShelf(storeId, shelvingGroupId, shelvingId, shelfId) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            s"${dittoConfig.getString("namespace")}:shelving-${storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
             "removeShelf",
             Some(
               JsonObject.of(
@@ -469,10 +469,10 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case AddItemsRow(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+        case AddItemsRow(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            s"${dittoConfig.getString("namespace")}:shelving-${storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
             "addItemsRow",
             Some(
               JsonObject.of(
@@ -485,10 +485,10 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case RemoveItemsRow(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+        case RemoveItemsRow(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
           sendMessage(
             client,
-            s"${dittoConfig.getString("namespace")}:shelving-${store.storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
+            s"${dittoConfig.getString("namespace")}:shelving-${storeId.value}-${shelvingGroupId.value}-${shelvingId.value}",
             "removeItemsRow",
             Some(
               JsonObject.of(
@@ -501,18 +501,18 @@ object DittoActor extends SprayJsonSupport {
             None
           )
           Behaviors.same[DittoCommand]
-        case ItemDetected(store, catalogItem, itemId) =>
-          itemStateHandlers.onItemDetected(ItemDetectedEvent(itemId, catalogItem, store.storeId))
+        case ItemDetected(storeId, catalogItem, itemId) =>
+          itemStateHandlers.onItemDetected(ItemDetectedEvent(itemId, catalogItem, storeId))
           Behaviors.same[DittoCommand]
-        case ItemInsertedIntoDropSystem(store, catalogItem, itemId) =>
-          itemStateHandlers.onItemInserted(ItemInsertedInDropSystemEvent(catalogItem, itemId, store.storeId))
+        case ItemInsertedIntoDropSystem(storeId, catalogItem, itemId) =>
+          itemStateHandlers.onItemInserted(ItemInsertedInDropSystemEvent(catalogItem, itemId, storeId))
           Behaviors.same[DittoCommand]
-        case ItemReturned(store, catalogItem, itemId) =>
-          itemStateHandlers.onItemReturned(ItemReturnedEvent(catalogItem, itemId, store.storeId))
+        case ItemReturned(storeId, catalogItem, itemId) =>
+          itemStateHandlers.onItemReturned(ItemReturnedEvent(catalogItem, itemId, storeId))
           Behaviors.same[DittoCommand]
-        case CatalogItemLiftingRegistered(store, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
+        case CatalogItemLiftingRegistered(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
           itemStateHandlers.onCatalogItemLiftingRegistered(
-            CatalogItemLiftingRegisteredEvent(store.storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+            CatalogItemLiftingRegisteredEvent(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
           )
           Behaviors.same[DittoCommand]
         case _ => Behaviors.unhandled[DittoCommand]

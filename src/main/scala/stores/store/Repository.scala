@@ -16,6 +16,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import eu.timepit.refined.auto.given
 import io.getquill.*
+
 import stores.store.valueobjects.*
 import stores.store.entities.Store
 import AnyOps.*
