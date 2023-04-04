@@ -57,8 +57,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 
+import io.getquill.JdbcContextConfig
 import org.eclipse.ditto.policies.model.PolicyId
 
+import javax.sql.DataSource
 import scala.util.{Failure, Success} // scalafix:ok
 
 @DoNotDiscover
@@ -67,13 +69,15 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private val testKit: ActorTestKit = ActorTestKit()
   private val rootActorProbe: TestProbe[RootCommand] = testKit.createTestProbe[RootCommand]()
   private val messageBrokerActorProbe: TestProbe[MessageBrokerCommand] = testKit.createTestProbe[MessageBrokerCommand]()
+  private val responseProbe: TestProbe[Validated[Unit]] = testKit.createTestProbe[Validated[Unit]]()
   private val serviceProbe: TestProbe[DittoCommand] = testKit.createTestProbe[DittoCommand]()
   private val config: Config = ConfigFactory.load()
+  private val dataSource: DataSource = JdbcContextConfig(config.getConfig("repository")).dataSource
 
   private val dittoConfig: Config = config.getConfig("ditto")
 
   private val dittoActor: ActorRef[DittoCommand] =
-    testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dittoConfig))
+    testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dataSource, dittoConfig))
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
@@ -416,7 +420,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             "itemsRowId"
           )
       )
-    testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dittoConfig))
+    testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dataSource, dittoConfig))
     maybeClient = Some(client)
   }
 

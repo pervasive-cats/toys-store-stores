@@ -22,6 +22,17 @@ import spray.json.deserializationError
 import spray.json.enrichAny
 
 import stores.application.Serializers.StringJsonFormat
+import stores.application.RequestProcessingFailed
+import stores.application.routes.Routes.{DeserializationFailed, RequestFailed}
+import stores.store.Repository.{RepositoryOperationFailed, StoreNotFound}
+import stores.store.valueobjects.CatalogItem.WrongCatalogItemIdFormat
+import stores.store.valueobjects.Count.WrongCountFormat
+import stores.store.valueobjects.ItemId.WrongItemIdFormat
+import stores.store.valueobjects.ItemsRowId.WrongItemsRowId
+import stores.store.valueobjects.ShelfId.WrongShelfIdFormat
+import stores.store.valueobjects.ShelvingGroupId.WrongShelvingGroupIdFormat
+import stores.store.valueobjects.ShelvingId.WrongShelvingIdFormat
+import stores.store.valueobjects.StoreId.WrongStoreIdFormat
 
 trait Entity
 
@@ -64,6 +75,19 @@ object Entity {
         error.asJsObject.getFields("type", "message") match {
           case Seq(JsString(tpe), JsString(message)) =>
             ErrorResponseEntity(tpe match {
+              case "StoreNotFound" => StoreNotFound
+              case "WrongCountFormat" => WrongCountFormat
+              case "WrongCatalogItemIdFormat" => WrongCatalogItemIdFormat
+              case "WrongItemsRowId" => WrongItemsRowId
+              case "WrongItemIdFormat" => WrongItemIdFormat
+              case "WrongShelfIdFormat" => WrongShelfIdFormat
+              case "WrongShelvingIdFormat" => WrongShelvingIdFormat
+              case "WrongShelvingGroupIdFormat" => WrongShelvingGroupIdFormat
+              case "WrongStoreIdFormat" => WrongStoreIdFormat
+              case "RepositoryOperationFailed" => RepositoryOperationFailed
+              case "RequestProcessingFailed" => RequestProcessingFailed
+              case "RequestFailed" => RequestFailed
+              case "DeserializationFailed" => DeserializationFailed(message)
               case _ => deserializationError(msg = "Json format was not valid")
             })
           case _ => deserializationError(msg = "Json format was not valid")

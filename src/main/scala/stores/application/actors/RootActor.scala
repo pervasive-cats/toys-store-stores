@@ -16,6 +16,8 @@ import akka.actor.typed.*
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import com.typesafe.config.Config
+import com.zaxxer.hikari.HikariDataSource
+import io.getquill.JdbcContextConfig
 
 import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand, StoreServerCommand}
 import stores.application.actors.commands.RootCommand.Startup
@@ -31,8 +33,9 @@ object RootActor {
       )
       Behaviors.receiveMessage {
         case Startup(true) =>
+          val dataSource: HikariDataSource = JdbcContextConfig(config.getConfig("repository")).dataSource
           val dittoActor: ActorRef[DittoCommand] = ctx.spawn(
-            DittoActor(ctx.self, messageBrokerActor, config.getConfig("ditto")),
+            DittoActor(ctx.self, messageBrokerActor, dataSource, config.getConfig("ditto")),
             name = "ditto_actor"
           )
           val serverConfig: Config = config.getConfig("server")

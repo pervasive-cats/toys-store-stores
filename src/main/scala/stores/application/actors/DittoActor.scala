@@ -13,6 +13,7 @@ import java.util.concurrent.ForkJoinPool
 import java.util.function.BiConsumer
 import java.util.function.BiFunction
 import java.util.regex.Pattern
+import javax.sql.DataSource
 
 import scala.concurrent.*
 import scala.concurrent.duration.DurationInt
@@ -20,6 +21,8 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
+
+import io.github.pervasivecats.stores.store.Repository
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -56,7 +59,7 @@ import stores.application.actors.commands.DittoCommand.*
 import AnyOps.===
 import stores.store.Repository.StoreNotFound
 import stores.store.entities.Store
-import stores.store.valueobjects.{CatalogItem, ItemId, ShelfId, ShelvingGroupId, ShelvingId, StoreId, ItemsRowId}
+import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.store.domainevents.ItemInsertedInDropSystem as ItemInsertedInDropSystemEvent
@@ -193,6 +196,7 @@ object DittoActor extends SprayJsonSupport {
   def apply(
     root: ActorRef[RootCommand],
     messageBrokerActor: ActorRef[MessageBrokerCommand],
+    dataSource: DataSource,
     dittoConfig: Config
   ): Behavior[DittoCommand] =
     Behaviors.setup[DittoCommand] { ctx =>
@@ -395,7 +399,7 @@ object DittoActor extends SprayJsonSupport {
                       "itemsRowId"
                     )
                 )
-              onDittoMessagesIncoming(root, client, messageBrokerActor, dittoConfig)
+              onDittoMessagesIncoming(root, client, messageBrokerActor, dataSource, dittoConfig)
             case _ => Behaviors.unhandled[DittoCommand]
           }
         case _ => Behaviors.unhandled[DittoCommand]
@@ -406,11 +410,13 @@ object DittoActor extends SprayJsonSupport {
     root: ActorRef[RootCommand],
     client: DittoClient,
     messageBrokerActor: ActorRef[MessageBrokerCommand],
+    dataSource: DataSource,
     dittoConfig: Config
   ): Behavior[DittoCommand] = {
     root ! Startup(success = true)
     Behaviors.receive { (ctx, msg) =>
       val itemStateHandlers: ItemStateHandlers = ItemStateHandlers(messageBrokerActor, ctx.self)
+      given Repository = Repository(dataSource)
       msg match {
         case RaiseAlarm(storeId) =>
           sendMessage(
