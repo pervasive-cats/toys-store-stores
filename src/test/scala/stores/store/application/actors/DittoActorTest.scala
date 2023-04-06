@@ -7,7 +7,7 @@
 package io.github.pervasivecats
 package stores.store.application.actors
 
-import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
+import stores.store.valueobjects.{CatalogItem, Currency, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 import scala.jdk.OptionConverters.RichOptional
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
@@ -27,7 +27,7 @@ import eu.timepit.refined.auto.autoUnwrap
 import stores.application.actors.DittoActor
 import stores.application.actors.commands.DittoCommand.*
 import stores.application.actors.commands.RootCommand.Startup
-import stores.application.actors.commands.{Currency, DittoCommand, MessageBrokerCommand, RootCommand}
+import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand}
 import stores.store.entities.Store
 import stores.application.routes.entities.Entity.ResultResponseEntity
 import stores.application.actors.DittoActor.DittoError
@@ -46,7 +46,7 @@ import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover, Ignore, Tag}
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny, enrichString}
+import spray.json.{enrichAny, enrichString, JsBoolean, JsNumber, JsObject, JsString, JsValue}
 import stores.application.Serializers.given
 
 import java.util.concurrent.{CountDownLatch, ForkJoinPool, TimeUnit}
@@ -255,7 +255,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             (msg, storeId, _, _, correlationId, fields) =>
               fields match {
                 case Seq(JsNumber(amount), JsString(currency), JsString(description), JsString(name)) =>
-                  serviceProbe ! ShowItemData(storeId, name, description, amount.doubleValue, Currency.valueOf(currency))
+                  serviceProbe ! ShowItemData(storeId, name, description, amount.doubleValue, Currency.withName(currency))
                   sendReply(
                     msg,
                     correlationId,

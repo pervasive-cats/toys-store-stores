@@ -7,67 +7,54 @@
 package io.github.pervasivecats
 package stores.application.actors
 
-import java.net.http.HttpHeaders
-import java.util.concurrent.CompletionException
-import java.util.concurrent.ForkJoinPool
-import java.util.function.BiConsumer
-import java.util.function.BiFunction
-import java.util.regex.Pattern
-import javax.sql.DataSource
+import stores.application.actors.MessageBrokerActor
+import stores.application.Serializers.given
+import stores.application.actors.commands.DittoCommand.*
+import stores.store.Repository
+import AnyOps.===
+import stores.application.actors.commands.*
+import stores.application.actors.commands.RootCommand.Startup
+import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
+import stores.store.Repository.StoreNotFound
+import stores.store.domainevents.{
+  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent,
+  ItemDetected as ItemDetectedEvent,
+  ItemInsertedInDropSystem as ItemInsertedInDropSystemEvent,
+  ItemReturned as ItemReturnedEvent
+}
+import stores.store.entities.Store
+import stores.store.services.ItemStateHandlers
+import stores.store.valueobjects.*
 
-import scala.concurrent.*
-import scala.concurrent.duration.DurationInt
-import scala.jdk.OptionConverters.RichOptional
-import scala.util.Failure
-import scala.util.Success
-import scala.util.matching.Regex
-
-import io.github.pervasivecats.stores.store.Repository
-
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import com.typesafe.config.Config
 import eu.timepit.refined.auto.autoUnwrap
 import org.eclipse.ditto.base.model.common.HttpStatus
-import org.eclipse.ditto.client.DittoClient
-import org.eclipse.ditto.client.DittoClients
+import org.eclipse.ditto.client.{DittoClient, DittoClients}
 import org.eclipse.ditto.client.configuration.*
 import org.eclipse.ditto.client.live.commands.LiveCommandHandler
-import org.eclipse.ditto.client.live.messages.MessageSender
-import org.eclipse.ditto.client.live.messages.RepliableMessage
-import org.eclipse.ditto.client.messaging.AuthenticationProviders
-import org.eclipse.ditto.client.messaging.MessagingProviders
+import org.eclipse.ditto.client.live.messages.{MessageSender, RepliableMessage}
+import org.eclipse.ditto.client.messaging.{AuthenticationProviders, MessagingProviders}
 import org.eclipse.ditto.client.options.Options
 import org.eclipse.ditto.json.JsonObject
-import org.eclipse.ditto.messages.model.Message as DittoMessage
-import org.eclipse.ditto.messages.model.MessageDirection
+import org.eclipse.ditto.messages.model.{MessageDirection, Message as DittoMessage}
 import org.eclipse.ditto.policies.model.PolicyId
 import org.eclipse.ditto.things.model.*
 import org.eclipse.ditto.things.model.signals.commands.exceptions.ThingNotAccessibleException
-import spray.json.JsNumber
-import spray.json.JsObject
-import spray.json.JsValue
-import spray.json.enrichAny
-import spray.json.enrichString
+import spray.json.{enrichAny, enrichString, JsNumber, JsObject, JsValue}
 
-import stores.application.actors.MessageBrokerActor
-import stores.application.actors.commands.MessageBrokerCommand
-import stores.application.Serializers.given
-import stores.application.actors.commands.DittoCommand.*
-import AnyOps.===
-import stores.store.Repository.StoreNotFound
-import stores.store.entities.Store
-import stores.store.valueobjects.{CatalogItem, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
-import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
-import stores.application.actors.commands.RootCommand.Startup
-import stores.store.domainevents.ItemInsertedInDropSystem as ItemInsertedInDropSystemEvent
-import stores.store.domainevents.ItemDetected as ItemDetectedEvent
-import stores.store.domainevents.ItemReturned as ItemReturnedEvent
-import stores.store.domainevents.CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent
-import stores.store.services.ItemStateHandlers
-import stores.application.actors.commands.{DittoCommand, RootCommand, StoreServerCommand}
+import java.net.http.HttpHeaders
+import java.util.concurrent.{CompletionException, ForkJoinPool}
+import java.util.function.{BiConsumer, BiFunction}
+import java.util.regex.Pattern
+import javax.sql.DataSource
+import scala.concurrent.*
+import scala.concurrent.duration.DurationInt
+import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Failure, Success}
+import scala.util.matching.Regex
 
 object DittoActor extends SprayJsonSupport {
 
@@ -237,7 +224,7 @@ object DittoActor extends SprayJsonSupport {
               root ! Startup(success = false)
               null
             }
-          Behaviors.receiveMessage { // device-generated event
+          Behaviors.receiveMessage {
             case DittoMessagesIncoming =>
               client
                 .live
@@ -521,7 +508,6 @@ object DittoActor extends SprayJsonSupport {
             CatalogItemLiftingRegisteredEvent(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
           )
           Behaviors.same[DittoCommand]
-        case _ => Behaviors.unhandled[DittoCommand]
       }
     }
   }
