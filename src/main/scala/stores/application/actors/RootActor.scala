@@ -19,9 +19,8 @@ import com.typesafe.config.Config
 import com.zaxxer.hikari.HikariDataSource
 import io.getquill.JdbcContextConfig
 
-import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand, StoreServerCommand}
+import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand, RootCommand}
 import stores.application.actors.commands.RootCommand.Startup
-import stores.application.routes.Routes
 
 object RootActor {
 
@@ -34,42 +33,15 @@ object RootActor {
       Behaviors.receiveMessage {
         case Startup(true) =>
           val dataSource: HikariDataSource = JdbcContextConfig(config.getConfig("repository")).dataSource
-          val dittoActor: ActorRef[DittoCommand] = ctx.spawn(
+          ctx.spawn(
             DittoActor(ctx.self, messageBrokerActor, dataSource, config.getConfig("ditto")),
             name = "ditto_actor"
           )
-          val serverConfig: Config = config.getConfig("server")
           Behaviors.receiveMessage {
-            case Startup(true) =>
-              Behaviors.same[RootCommand] // TODO awaitservers
-            case Startup(false) => Behaviors.stopped[RootCommand]
+            case Startup(true) => Behaviors.empty[RootCommand]
+            case _ => Behaviors.stopped[RootCommand]
           }
         case Startup(false) => Behaviors.stopped[RootCommand]
       }
     }
-
-  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def awaitServers(
-    storeServer: ActorRef[StoreServerCommand],
-    serverConfig: Config,
-    count: Int
-  ): Behavior[RootCommand] = Behaviors.receive { (ctx, msg) =>
-    msg match {
-      case Startup(true) if count < 0 =>
-        awaitServers(storeServer, serverConfig, count + 1)
-      case Startup(true) =>
-        given ActorSystem[_] = ctx.system
-        val httpServer: Future[Http.ServerBinding] =
-          Http()
-            .newServerAt(serverConfig.getString("hostName"), serverConfig.getInt("portNumber"))
-            .bind(Routes(storeServer))
-        Behaviors.receiveSignal {
-          case (_, PostStop) =>
-            given ExecutionContext = ExecutionContext.fromExecutor(ForkJoinPool.commonPool())
-            httpServer.flatMap(_.unbind()).onComplete(_ => println("Server has stopped"))
-            Behaviors.same[RootCommand]
-        }
-      case Startup(false) => Behaviors.stopped[RootCommand]
-    }
-  }
 }

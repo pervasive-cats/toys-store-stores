@@ -9,7 +9,6 @@ package stores.application.actors.commands
 
 import stores.store.domainevents.{
   ItemReturned as ItemReturnedEvent,
-  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent,
   CatalogItemLifted as CatalogItemLiftedEvent
 }
 
@@ -19,5 +18,5 @@ object MessageBrokerCommand {
 
   final case class ItemReturned(event: ItemReturnedEvent) extends MessageBrokerCommand
 
-  final case class CatalogItemLiftingRegistered(event: CatalogItemLiftingRegisteredEvent) extends MessageBrokerCommand
+  final case class CatalogItemLifted(event: CatalogItemLiftedEvent) extends MessageBrokerCommand
 }

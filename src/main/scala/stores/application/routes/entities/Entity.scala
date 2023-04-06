@@ -23,7 +23,6 @@ import spray.json.enrichAny
 
 import stores.application.Serializers.StringJsonFormat
 import stores.application.RequestProcessingFailed
-import stores.application.routes.Routes.{DeserializationFailed, RequestFailed}
 import stores.store.Repository.{RepositoryOperationFailed, StoreNotFound}
 import stores.store.valueobjects.CatalogItem.WrongCatalogItemIdFormat
 import stores.store.valueobjects.Count.WrongCountFormat
@@ -86,8 +85,6 @@ object Entity {
               case "WrongStoreIdFormat" => WrongStoreIdFormat
               case "RepositoryOperationFailed" => RepositoryOperationFailed
               case "RequestProcessingFailed" => RequestProcessingFailed
-              case "RequestFailed" => RequestFailed
-              case "DeserializationFailed" => DeserializationFailed(message)
               case _ => deserializationError(msg = "Json format was not valid")
             })
           case _ => deserializationError(msg = "Json format was not valid")

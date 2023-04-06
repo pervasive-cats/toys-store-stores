@@ -39,7 +39,6 @@ import spray.json.enrichString
 import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.actors.commands.RootCommand.Startup
-import stores.application.routes.entities.Response.*
 import stores.application.Serializers.given
 import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}

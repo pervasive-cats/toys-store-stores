@@ -32,7 +32,7 @@ import spray.json.enrichString
 
 import stores.application.RequestProcessingFailed
 import stores.application.Serializers.given
-import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}
+import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted, ItemReturned}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Entity
@@ -40,7 +40,7 @@ import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultRes
 import stores.store.services.ItemStateHandlers
 import stores.store.domainevents.{
   ItemReturned as ItemReturnedEvent,
-  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent
+  CatalogItemLifted as CatalogItemLiftedEvent
 }
 
 object MessageBrokerActor {
@@ -83,10 +83,10 @@ object MessageBrokerActor {
           case Seq(JsNull, JsObject(_)) =>
             (
               itemReturnedRequests.get(UUID.fromString(message.getProperties.getCorrelationId)),
-              catalogItemLiftingRequests.get(UUID.fromString(message.getProperties.getCorrelationId))
+              catalogItemLiftedRequests.get(UUID.fromString(message.getProperties.getCorrelationId))
             ) match {
               case (Some(e), None) => publishItemReturned(channel, e, message.getEnvelope.getExchange)
-              case (None, Some(e)) => ctx.self ! CatalogItemLiftingRegistered(e)
+              case (None, Some(e)) => ctx.self ! CatalogItemLifted(e)
               case _ =>
                 ctx.system.deadLetters[String] ! body
                 channel.basicReject(message.getEnvelope.getDeliveryTag, false)
@@ -103,7 +103,7 @@ object MessageBrokerActor {
   private var itemReturnedRequests: Map[UUID, ItemReturnedEvent] = Map.empty
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
-  private var catalogItemLiftingRequests: Map[UUID, CatalogItemLiftingRegisteredEvent] = Map.empty
+  private var catalogItemLiftedRequests: Map[UUID, CatalogItemLiftedEvent] = Map.empty
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def apply(
@@ -164,9 +164,9 @@ object MessageBrokerActor {
               publishItemReturned(ch, e, routingKey = "items")
               publishItemReturned(ch, e, routingKey = "shopping")
               Behaviors.same[MessageBrokerCommand]
-            case CatalogItemLiftingRegistered(e) =>
+            case CatalogItemLifted(e) =>
               val itemsCorrelationId: UUID = UUID.randomUUID()
-              catalogItemLiftingRequests += (itemsCorrelationId -> e)
+              catalogItemLiftedRequests += (itemsCorrelationId -> e)
               publish(ch, ResultResponseEntity(e), routingKey = "items", itemsCorrelationId.toString)
               Behaviors.same[MessageBrokerCommand]
           }
