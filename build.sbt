@@ -41,7 +41,8 @@ lazy val root = project
       postgresql,
       testContainersPostgresql,
       ditto,
-      quill
+      quill,
+      enumeratum
     ),
     wartremoverErrors ++= Warts.allBut(Wart.ImplicitParameter),
     version := "1.0.0-beta.4",

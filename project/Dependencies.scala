@@ -33,4 +33,6 @@ object Dependencies {
   lazy val ditto: ModuleID = "org.eclipse.ditto" % "ditto-client" % "3.1.1"
 
   lazy val quill: ModuleID = "io.getquill" %% "quill-jdbc" % "4.6.0.1"
+
+  lazy val enumeratum: ModuleID = "com.beachape" %% "enumeratum" % "1.7.2"
 }
