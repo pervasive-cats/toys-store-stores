@@ -40,12 +40,9 @@ import stores.application.actors.MessageBrokerActor
 import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.actors.commands.RootCommand.Startup
 import stores.application.Serializers.given
-import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLiftingRegistered, ItemReturned}
+import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted, ItemReturned}
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
-import stores.store.domainevents.{
-  CatalogItemLiftingRegistered as CatalogItemLiftingRegisteredEvent,
-  ItemReturned as ItemReturnedEvent
-}
+import stores.store.domainevents.{CatalogItemLifted as CatalogItemLiftedEvent, ItemReturned as ItemReturnedEvent}
 import stores.store.valueobjects.*
 
 class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with BeforeAndAfterAll {
@@ -80,12 +77,9 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
     storeId
   )
 
-  private val catalogItemLiftingEvent: CatalogItemLiftingRegisteredEvent = CatalogItemLiftingRegisteredEvent(
-    storeId,
-    ShelvingGroupId(0).getOrElse(fail()),
-    ShelvingId(0).getOrElse(fail()),
-    ShelfId(0).getOrElse(fail()),
-    ItemsRowId(0).getOrElse(fail())
+  private val catalogItemLiftedEvent: CatalogItemLiftedEvent = CatalogItemLiftedEvent(
+    CatalogItem(9000).getOrElse(fail()),
+    storeId
   )
 
   case object TestError extends ValidationError {
@@ -237,7 +231,7 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
 
     describe("after being notified that a catalog item has been lifted") {
       it("should notify the message broker") {
-        messageBroker.getOrElse(fail()) ! CatalogItemLiftingRegistered(catalogItemLiftingEvent)
+        messageBroker.getOrElse(fail()) ! CatalogItemLifted(catalogItemLiftedEvent)
         val itemsMessage: Map[String, String] = itemsQueue.poll(10, TimeUnit.SECONDS)
         itemsMessage("exchange") shouldBe "stores"
         itemsMessage("routingKey") shouldBe "items"
@@ -248,8 +242,8 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
         itemsMessage("replyTo") shouldBe "stores"
         itemsMessage("body")
           .parseJson
-          .convertTo[ResultResponseEntity[CatalogItemLiftingRegisteredEvent]]
-          .result shouldBe catalogItemLiftingEvent
+          .convertTo[ResultResponseEntity[CatalogItemLiftedEvent]]
+          .result shouldBe catalogItemLiftedEvent
         maybeCorrelationId = Some(itemsMessage("correlationId"))
       }
     }
@@ -280,8 +274,8 @@ class MessageBrokerActorTest extends AnyFunSpec with TestContainerForAll with Be
         itemsMessage("replyTo") shouldBe "stores"
         itemsMessage("body")
           .parseJson
-          .convertTo[ResultResponseEntity[CatalogItemLiftingRegisteredEvent]]
-          .result shouldBe catalogItemLiftingEvent
+          .convertTo[ResultResponseEntity[CatalogItemLiftedEvent]]
+          .result shouldBe catalogItemLiftedEvent
       }
     }
   }

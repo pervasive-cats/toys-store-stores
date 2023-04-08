@@ -12,7 +12,9 @@ import java.util.concurrent.ForkJoinPool
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import akka.actor.typed.*
+import akka.actor.ActorSystem
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import com.typesafe.config.Config
@@ -32,9 +34,16 @@ object RootActor {
       )
       Behaviors.receiveMessage {
         case Startup(true) =>
-          val dataSource: HikariDataSource = JdbcContextConfig(config.getConfig("repository")).dataSource
+          given ActorSystem = ctx.system.classicSystem
           ctx.spawn(
-            DittoActor(ctx.self, messageBrokerActor, dataSource, config.getConfig("ditto")),
+            DittoActor(
+              ctx.self,
+              messageBrokerActor,
+              JdbcContextConfig(config.getConfig("repository")).dataSource,
+              config.getConfig("ditto"),
+              config.getConfig("itemServer"),
+              Http()
+            ),
             name = "ditto_actor"
           )
           Behaviors.receiveMessage {

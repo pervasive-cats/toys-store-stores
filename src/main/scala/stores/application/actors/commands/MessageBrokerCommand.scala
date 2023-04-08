@@ -7,10 +7,7 @@
 package io.github.pervasivecats
 package stores.application.actors.commands
 
-import stores.store.domainevents.{
-  ItemReturned as ItemReturnedEvent,
-  CatalogItemLifted as CatalogItemLiftedEvent
-}
+import stores.store.domainevents.{ItemReturned as ItemReturnedEvent, CatalogItemLifted as CatalogItemLiftedEvent}
 
 sealed trait MessageBrokerCommand
 

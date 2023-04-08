@@ -38,10 +38,7 @@ import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Entity
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.store.services.ItemStateHandlers
-import stores.store.domainevents.{
-  ItemReturned as ItemReturnedEvent,
-  CatalogItemLifted as CatalogItemLiftedEvent
-}
+import stores.store.domainevents.{ItemReturned as ItemReturnedEvent, CatalogItemLifted as CatalogItemLiftedEvent}
 
 object MessageBrokerActor {
 

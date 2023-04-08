@@ -5,7 +5,7 @@
  */
 
 package io.github.pervasivecats
-package stores.store.application.actors
+package stores.application.actors
 
 import stores.store.valueobjects.{CatalogItem, Currency, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
@@ -73,11 +73,12 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
   private val serviceProbe: TestProbe[DittoCommand] = testKit.createTestProbe[DittoCommand]()
   private val config: Config = ConfigFactory.load()
   private val dataSource: DataSource = JdbcContextConfig(config.getConfig("repository")).dataSource
-
   private val dittoConfig: Config = config.getConfig("ditto")
+  private val itemServerConfig: Config = config.getConfig("itemServer")
+  private given ActorSystem = testKit.system.classicSystem
 
   private val dittoActor: ActorRef[DittoCommand] =
-    testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dataSource, dittoConfig))
+    testKit.spawn(DittoActor(rootActorProbe.ref, messageBrokerActorProbe.ref, dataSource, dittoConfig, itemServerConfig, Http()))
 
   @SuppressWarnings(Array("org.wartremover.warts.Var", "scalafix:DisableSyntax.var"))
   private var maybeClient: Option[DittoClient] = None
@@ -420,7 +421,6 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
             "itemsRowId"
           )
       )
-    testKit.spawn(DittoActor(rootActorProbe.ref, testKit.createTestProbe[MessageBrokerCommand]().ref, dataSource, dittoConfig))
     maybeClient = Some(client)
   }
 
@@ -530,15 +530,6 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
           .payload(JsObject("catalogItemId" -> catalogItem.toJson, "itemId" -> itemId.toJson).compactPrint)
           .send((_, t) => Option(t).fold(latch.countDown())(_ => fail()))
         latch.await(1, TimeUnit.MINUTES)
-        serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(storeId))
-        removeAntiTheftSystemThing(storeId)
-      }
-    }
-
-    describe("when asked to raise a shop's alarm") {
-      it("should sound the alarm") {
-        createAntiTheftSystemThing(storeId)
-        dittoActor ! RaiseAlarm(storeId)
         serviceProbe.expectMessage[DittoCommand](1.minutes, RaiseAlarm(storeId))
         removeAntiTheftSystemThing(storeId)
       }

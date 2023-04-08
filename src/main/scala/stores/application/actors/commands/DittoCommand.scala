@@ -8,6 +8,7 @@ package io.github.pervasivecats
 package stores.application.actors.commands
 
 import org.eclipse.ditto.client.DittoClient
+
 import stores.store.valueobjects.{CatalogItem, Currency, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
 
 sealed trait DittoCommand

@@ -77,6 +77,16 @@ object Serializers extends DefaultJsonProtocol {
 
   given JsonFormat[StoreId] = longSerializer(_.value, StoreId.apply)
 
+  given JsonFormat[Currency] with {
+
+    override def read(json: JsValue): Currency = json match {
+      case JsString(value) => Currency.withNameEither(value).fold(e => deserializationError(e.getMessage), identity)
+      case _ => deserializationError(msg = "Json format is not valid")
+    }
+
+    override def write(currency: Currency): JsValue = JsString(currency.entryName)
+  }
+
   given JsonFormat[CatalogItemLifted] with {
 
     override def read(json: JsValue): CatalogItemLifted = json.asJsObject.getFields("catalogItem", "storeId") match {

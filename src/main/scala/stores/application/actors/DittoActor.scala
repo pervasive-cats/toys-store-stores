@@ -7,6 +7,50 @@
 package io.github.pervasivecats
 package stores.application.actors
 
+import java.net.http.HttpHeaders
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ForkJoinPool
+import java.util.function.BiConsumer
+import java.util.function.BiFunction
+import java.util.regex.Pattern
+import javax.sql.DataSource
+
+import scala.concurrent.*
+import scala.concurrent.duration.DurationInt
+import scala.jdk.OptionConverters.RichOptional
+import scala.util.Failure
+import scala.util.Success
+import scala.util.matching.Regex
+
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import com.typesafe.config.Config
+import eu.timepit.refined.auto.autoUnwrap
+import org.eclipse.ditto.base.model.common.HttpStatus
+import org.eclipse.ditto.client.DittoClient
+import org.eclipse.ditto.client.DittoClients
+import org.eclipse.ditto.client.configuration.*
+import org.eclipse.ditto.client.live.commands.LiveCommandHandler
+import org.eclipse.ditto.client.live.messages.MessageSender
+import org.eclipse.ditto.client.live.messages.RepliableMessage
+import org.eclipse.ditto.client.messaging.AuthenticationProviders
+import org.eclipse.ditto.client.messaging.MessagingProviders
+import org.eclipse.ditto.client.options.Options
+import org.eclipse.ditto.json.JsonObject
+import org.eclipse.ditto.messages.model.{Message => DittoMessage}
+import org.eclipse.ditto.messages.model.MessageDirection
+import org.eclipse.ditto.policies.model.PolicyId
+import org.eclipse.ditto.things.model.*
+import org.eclipse.ditto.things.model.signals.commands.exceptions.ThingNotAccessibleException
+import spray.json.JsNumber
+import spray.json.JsObject
+import spray.json.JsValue
+import spray.json.enrichAny
+import spray.json.enrichString
+
 import stores.application.actors.MessageBrokerActor
 import stores.application.Serializers.given
 import stores.application.actors.commands.DittoCommand.*
@@ -24,37 +68,7 @@ import stores.store.domainevents.{
 }
 import stores.store.entities.Store
 import stores.store.services.ItemStateHandlers
-import stores.store.valueobjects.*
-
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import com.typesafe.config.Config
-import eu.timepit.refined.auto.autoUnwrap
-import org.eclipse.ditto.base.model.common.HttpStatus
-import org.eclipse.ditto.client.{DittoClient, DittoClients}
-import org.eclipse.ditto.client.configuration.*
-import org.eclipse.ditto.client.live.commands.LiveCommandHandler
-import org.eclipse.ditto.client.live.messages.{MessageSender, RepliableMessage}
-import org.eclipse.ditto.client.messaging.{AuthenticationProviders, MessagingProviders}
-import org.eclipse.ditto.client.options.Options
-import org.eclipse.ditto.json.JsonObject
-import org.eclipse.ditto.messages.model.{MessageDirection, Message as DittoMessage}
-import org.eclipse.ditto.policies.model.PolicyId
-import org.eclipse.ditto.things.model.*
-import org.eclipse.ditto.things.model.signals.commands.exceptions.ThingNotAccessibleException
-import spray.json.{enrichAny, enrichString, JsNumber, JsObject, JsValue}
-
-import java.net.http.HttpHeaders
-import java.util.concurrent.{CompletionException, ForkJoinPool}
-import java.util.function.{BiConsumer, BiFunction}
-import java.util.regex.Pattern
-import javax.sql.DataSource
-import scala.concurrent.*
-import scala.concurrent.duration.DurationInt
-import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Failure, Success}
-import scala.util.matching.Regex
+import stores.store.valueobjects.*=>
 
 object DittoActor extends SprayJsonSupport {
 
@@ -77,18 +91,18 @@ object DittoActor extends SprayJsonSupport {
     msg.send()
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null"))
   private def responseHandler[T]: ActorRef[Validated[Unit]] => BiConsumer[T, Throwable] =
     r =>
       (_, t) =>
-        if (t === null)
+        Option(t).fold(
           r ! Right[ValidationError, Unit](())
-        else
-          t.getCause match {
+        )(
+          _.getCause match {
             case e: ThingNotAccessibleException if e.getHttpStatus === HttpStatus.NOT_FOUND =>
               r ! Left[ValidationError, Unit](StoreNotFound)
             case _ => r ! Left[ValidationError, Unit](DittoError)
           }
+        )
 
   private def sendMessage(
     client: DittoClient,
@@ -112,50 +126,72 @@ object DittoActor extends SprayJsonSupport {
     }
   }
 
-  private def handleMessage(
+  private def handleAntiTheftSystemMessage(
     message: RepliableMessage[String, String],
     messageHandler: (
       RepliableMessage[String, String],
       StoreId,
-      Option[ShelvingGroupId],
-      Option[ShelvingId],
       String,
       Seq[JsValue]
     ) => Unit,
     payloadFields: String*
   ): Unit = {
     val thingIdMatcherAntiTheftSystem: Regex = "antiTheftSystem-(?<store>[0-9]+)".r
-    val thingIdMatcherDropSystem: Regex = "dropSystem-(?<store>[0-9]+)".r
-    val thingIdMatcherShelving: Regex = "shelving-(?<store>[0-9]+)-(?<shelvingGroup>[0-9]+)-(?<shelving>[0-9]+)".r
     (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
       case (MessageDirection.FROM, thingIdMatcherAntiTheftSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
-          error =>
-            sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(error).toJson.compactPrint)),
-          storeId =>
-            messageHandler(
-              message,
-              storeId,
-              None,
-              None,
-              correlationId,
-              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
-            )
+          e => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(e).toJson.compactPrint)),
+          messageHandler(
+            message,
+            _,
+            correlationId,
+            message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+          )
         )
+      case _ => ()
+    }
+  }
+
+  private def handleDropSystemMessage(
+    message: RepliableMessage[String, String],
+    messageHandler: (
+      RepliableMessage[String, String],
+      StoreId,
+      String,
+      Seq[JsValue]
+    ) => Unit,
+    payloadFields: String*
+  ): Unit = {
+    val thingIdMatcherDropSystem: Regex = "dropSystem-(?<store>[0-9]+)".r
+    (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
       case (MessageDirection.FROM, thingIdMatcherDropSystem(store), Some(correlationId)) if store.toLongOption.isDefined =>
         StoreId(store.toLong).fold(
-          error =>
-            sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(error).toJson.compactPrint)),
-          storeId =>
-            messageHandler(
-              message,
-              storeId,
-              None,
-              None,
-              correlationId,
-              message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
-            )
+          e => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(e).toJson.compactPrint)),
+          messageHandler(
+            message,
+            _,
+            correlationId,
+            message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
+          )
         )
+      case _ => ()
+    }
+  }
+
+  private def handleShelvingMessage(
+    message: RepliableMessage[String, String],
+    messageHandler: (
+      RepliableMessage[String, String],
+      StoreId,
+      ShelvingGroupId,
+      ShelvingId,
+      String,
+      Seq[JsValue]
+    ) => Unit,
+    payloadFields: String*
+  ): Unit = {
+    val thingIdMatcherShelving: Regex = "shelving-(?<store>[0-9]+)-(?<shelvingGroup>[0-9]+)-(?<shelving>[0-9]+)".r
+    (message.getDirection, message.getEntityId.getName, message.getCorrelationId.toScala) match {
       case (MessageDirection.FROM, thingIdMatcherShelving(store, shelvingGroup, shelving), Some(correlationId))
            if store.toLongOption.isDefined && shelvingGroup.toLongOption.isDefined && shelving.toLongOption.isDefined =>
         (for {
@@ -163,14 +199,13 @@ object DittoActor extends SprayJsonSupport {
           shelvingGroupId <- ShelvingGroupId(shelvingGroup.toLong)
           shelvingId <- ShelvingId(shelving.toLong)
         } yield (storeId, shelvingGroupId, shelvingId)).fold(
-          error =>
-            sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(error).toJson.compactPrint)),
+          e => sendReply(message, correlationId, HttpStatus.BAD_REQUEST, Some(ErrorResponseEntity(e).toJson.compactPrint)),
           (storeId, shelvingGroupId, shelvingId) =>
             messageHandler(
               message,
               storeId,
-              Some(shelvingGroupId),
-              Some(shelvingId),
+              shelvingGroupId,
+              shelvingId,
               correlationId,
               message.getPayload.toScala.map(_.parseJson.asJsObject.getFields(payloadFields: _*)).getOrElse(Seq.empty[JsValue])
             )
@@ -179,12 +214,14 @@ object DittoActor extends SprayJsonSupport {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null", "org.wartremover.warts.OptionPartial"))
+  @SuppressWarnings(Array("org.wartremover.warts.Null", "scalafix:DisableSyntax.null"))
   def apply(
     root: ActorRef[RootCommand],
     messageBrokerActor: ActorRef[MessageBrokerCommand],
     dataSource: DataSource,
-    dittoConfig: Config
+    dittoConfig: Config,
+    itemServerConfig: Config,
+    httpClient: HttpExt
   ): Behavior[DittoCommand] =
     Behaviors.setup[DittoCommand] { ctx =>
       val disconnectedDittoClient = DittoClients.newInstance(
@@ -233,9 +270,9 @@ object DittoActor extends SprayJsonSupport {
                   "itemDetected",
                   classOf[String],
                   (msg: RepliableMessage[String, String]) =>
-                    handleMessage(
+                    handleAntiTheftSystemMessage(
                       msg,
-                      (msg, storeId, _, _, correlationId, fields) =>
+                      (msg, storeId, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -271,9 +308,9 @@ object DittoActor extends SprayJsonSupport {
                   "itemInsertedIntoDropSystem",
                   classOf[String],
                   (msg: RepliableMessage[String, String]) =>
-                    handleMessage(
+                    handleDropSystemMessage(
                       msg,
-                      (msg, storeId, _, _, correlationId, fields) =>
+                      (msg, storeId, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -309,9 +346,9 @@ object DittoActor extends SprayJsonSupport {
                   "itemReturned",
                   classOf[String],
                   (msg: RepliableMessage[String, String]) =>
-                    handleMessage(
+                    handleDropSystemMessage(
                       msg,
-                      (msg, storeId, _, _, correlationId, fields) =>
+                      (msg, storeId, correlationId, fields) =>
                         fields match {
                           case Seq(JsNumber(catalogItem), JsNumber(itemId)) if catalogItem.isValidLong && itemId.isValidLong =>
                             (for {
@@ -347,20 +384,18 @@ object DittoActor extends SprayJsonSupport {
                   "catalogItemLiftingRegistered",
                   classOf[String],
                   (msg: RepliableMessage[String, String]) =>
-                    handleMessage(
+                    handleShelvingMessage(
                       msg,
                       (msg, storeId, shelvingGroupId, shelvingId, correlationId, fields) =>
                         fields match {
-                          case Seq(JsNumber(shelfId), JsNumber(itemsRowId))
-                               if shelfId.isValidLong && itemsRowId.isValidLong
-                               && shelvingGroupId.isDefined && shelvingId.isDefined =>
+                          case Seq(JsNumber(shelfId), JsNumber(itemsRowId)) if shelfId.isValidLong && itemsRowId.isValidLong =>
                             (for {
                               shelfId <- ShelfId(shelfId.longValue)
                               itemsRowId <- ItemsRowId(itemsRowId.longValue)
                             } yield ctx.self ! CatalogItemLiftingRegistered(
                               storeId,
-                              shelvingGroupId.get,
-                              shelvingId.get,
+                              shelvingGroupId,
+                              shelvingId,
                               shelfId,
                               itemsRowId
                             )).fold(
@@ -386,7 +421,7 @@ object DittoActor extends SprayJsonSupport {
                       "itemsRowId"
                     )
                 )
-              onDittoMessagesIncoming(root, client, messageBrokerActor, dataSource, dittoConfig)
+              onDittoMessagesIncoming(root, client, messageBrokerActor, dataSource, dittoConfig, itemServerConfig, httpClient)
             case _ => Behaviors.unhandled[DittoCommand]
           }
         case _ => Behaviors.unhandled[DittoCommand]
@@ -398,11 +433,13 @@ object DittoActor extends SprayJsonSupport {
     client: DittoClient,
     messageBrokerActor: ActorRef[MessageBrokerCommand],
     dataSource: DataSource,
-    dittoConfig: Config
+    dittoConfig: Config,
+    itemServerConfig: Config,
+    httpClient: HttpExt
   ): Behavior[DittoCommand] = {
     root ! Startup(success = true)
     Behaviors.receive { (ctx, msg) =>
-      val itemStateHandlers: ItemStateHandlers = ItemStateHandlers(messageBrokerActor, ctx.self)
+      val itemStateHandlers: ItemStateHandlers = ItemStateHandlers(messageBrokerActor, ctx.self, itemServerConfig, httpClient)
       given Repository = Repository(dataSource)
       msg match {
         case RaiseAlarm(storeId) =>
@@ -508,6 +545,7 @@ object DittoActor extends SprayJsonSupport {
             CatalogItemLiftingRegisteredEvent(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
           )
           Behaviors.same[DittoCommand]
+        case _ => Behaviors.unhandled[DittoCommand]
       }
     }
   }
