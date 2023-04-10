@@ -16,7 +16,7 @@ class CatalogItemLiftedTest extends AnyFunSpec {
 
   describe("A catalog item lifted") {
     describe("when created with a catalog item and a store id") {
-      it("should be contain them") {
+      it("should contain them") {
         val catalogItem: CatalogItem = CatalogItem(9000).getOrElse(fail())
         val storeId: StoreId = StoreId(8140).getOrElse(fail())
         val catalogItemLifted: CatalogItemLifted = CatalogItemLifted(catalogItem, storeId)

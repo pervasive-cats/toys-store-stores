@@ -48,7 +48,7 @@ class StoreTest extends AnyFunSpec {
       }
     }
 
-    describe("when add a new shelving group") {
+    describe("when adding a new shelving group") {
       it("should be added") {
         val shelvingGroupIdB: ShelvingGroupId = ShelvingGroupId(12).getOrElse(fail())
         val shelvingGroupB: ShelvingGroup = ShelvingGroup(shelvingGroupIdB, Seq[Shelving](shelving))
@@ -57,7 +57,7 @@ class StoreTest extends AnyFunSpec {
       }
     }
 
-    describe("when remove a shelving group") {
+    describe("when removing a shelving group") {
       it("should be removed") {
         val shelvingGroupIdB: ShelvingGroupId = ShelvingGroupId(12).getOrElse(fail())
         val shelvingGroupB: ShelvingGroup = ShelvingGroup(shelvingGroupIdB, Seq[Shelving](shelving))

@@ -16,7 +16,7 @@ class CatalogItemLiftingRegisteredTest extends AnyFunSpec {
 
   describe("A catalog item lifting registered") {
     describe("when created with a store id, a shelving group id, a shelving id, a shelf id and an items row id") {
-      it("should be contain them") {
+      it("should contain them") {
         val storeId: StoreId = StoreId(8140).getOrElse(fail())
         val shelvingGroupId: ShelvingGroupId = ShelvingGroupId(9001).getOrElse(fail())
         val shelvingId: ShelvingId = ShelvingId(9002).getOrElse(fail())
