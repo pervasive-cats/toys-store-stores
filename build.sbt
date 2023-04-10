@@ -46,7 +46,6 @@ lazy val root = project
     ),
     wartremoverErrors ++= Warts.allBut(Wart.ImplicitParameter),
     version := "1.0.0-beta.4",
-    coverageEnabled := true,
     coverageMinimumStmtTotal := 80,
     coverageMinimumBranchTotal := 80,
     headerLicense := Some(
@@ -58,5 +57,11 @@ lazy val root = project
       )
     ),
     assembly / assemblyJarName := "main.jar",
-    assembly / mainClass := Some("io.github.pervasivecats.Main"),
+    assembly / mainClass := Some("io.github.pervasivecats.main"),
+    assembly / assemblyMergeStrategy := {
+      case PathList("io", "getquill", _*) => MergeStrategy.first
+      case PathList("META-INF", "annotations", _*) => MergeStrategy.filterDistinctLines
+      case PathList("META-INF", "NOTICE-THIRD-PARTY.md") => MergeStrategy.first
+      case v => MergeStrategy.defaultMergeStrategy(v)
+    }
   )
