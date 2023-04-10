@@ -442,6 +442,7 @@ object DittoActor extends SprayJsonSupport {
     Behaviors.receive { (ctx, msg) =>
       val itemStateHandlers: ItemStateHandlers = ItemStateHandlers(messageBrokerActor, ctx.self, itemServerConfig, httpClient)
       given Repository = Repository(dataSource)
+      given ExecutionContext = ExecutionContext.fromExecutor(ForkJoinPool.commonPool())
       msg match {
         case RaiseAlarm(storeId) =>
           sendMessage(
@@ -578,17 +579,19 @@ object DittoActor extends SprayJsonSupport {
           )
           Behaviors.same[DittoCommand]
         case ItemDetected(storeId, catalogItem, itemId) =>
-          itemStateHandlers.onItemDetected(ItemDetectedEvent(itemId, catalogItem, storeId))
+          Future(itemStateHandlers.onItemDetected(ItemDetectedEvent(itemId, catalogItem, storeId)))
           Behaviors.same[DittoCommand]
         case ItemInsertedIntoDropSystem(storeId, catalogItem, itemId) =>
-          itemStateHandlers.onItemInserted(ItemInsertedInDropSystemEvent(catalogItem, itemId, storeId))
+          Future(itemStateHandlers.onItemInserted(ItemInsertedInDropSystemEvent(catalogItem, itemId, storeId)))
           Behaviors.same[DittoCommand]
         case ItemReturned(storeId, catalogItem, itemId) =>
-          itemStateHandlers.onItemReturned(ItemReturnedEvent(catalogItem, itemId, storeId))
+          Future(itemStateHandlers.onItemReturned(ItemReturnedEvent(catalogItem, itemId, storeId)))
           Behaviors.same[DittoCommand]
         case CatalogItemLiftingRegistered(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId) =>
-          itemStateHandlers.onCatalogItemLiftingRegistered(
-            CatalogItemLiftingRegisteredEvent(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+          Future(
+            itemStateHandlers.onCatalogItemLiftingRegistered(
+              CatalogItemLiftingRegisteredEvent(storeId, shelvingGroupId, shelvingId, shelfId, itemsRowId)
+            )
           )
           Behaviors.same[DittoCommand]
         case _ => Behaviors.unhandled[DittoCommand]
