@@ -11,14 +11,14 @@
   },
   "security": "nosec_sc",
   "uriVariables": {
-    "storeId": {
-      "title": "storeId",
+    "store": {
+      "title": "store",
       "description": "The id for the store this shelving belongs to.",
       "type": "integer",
       "minimum": 0
     },
-    "shelvingGroupId": {
-      "title": "shelvingGroupId",
+    "shelvingGroup": {
+      "title": "shelvingGroup",
       "description": "The id for the shelving group this shelving belongs to.",
       "type": "integer",
       "minimum": 0
@@ -31,8 +31,8 @@
     }
   },
   "properties": {
-    "storeId": {
-      "title": "storeId",
+    "store": {
+      "title": "store",
       "observable": false,
       "readOnly": true,
       "description": "The id for the store this shelving belongs to.",
@@ -43,12 +43,12 @@
           "op": [
             "readproperty"
           ],
-          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/storeId"
+          "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/attributes/store"
         }
       ]
     },
-    "shelvingGroupId": {
-      "title": "shelvingGroupId",
+    "shelvingGroup": {
+      "title": "shelvingGroup",
       "description": "The id for the shelving group this shelving belongs to.",
       "type": "integer",
       "minimum": 0,
@@ -57,7 +57,7 @@
           "op": [
             "readproperty"
           ],
-          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/shelvingGroupId"
+          "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/attributes/shelvingGroup"
         }
       ]
     },
@@ -73,7 +73,7 @@
           "op": [
             "readproperty"
           ],
-          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/id"
+          "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/attributes/id"
         }
       ]
     },
@@ -124,7 +124,7 @@
           "op": [
             "readproperty"
           ],
-          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/attributes/shelves"
+          "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/attributes/shelves"
         }
       ]
     }
@@ -138,7 +138,7 @@
                 "op": [
                     "invokeaction"
                 ],
-                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/addShelf",
+                "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/messages/inbox/addShelf",
                 "contentType": "application/json",
                 "response": {
                     "contentType": "application/json"
@@ -219,7 +219,7 @@
                 "op": [
                     "invokeaction"
                 ],
-                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/removeShelf",
+                "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/messages/inbox/removeShelf",
                 "contentType": "application/json",
                 "response": {
                     "contentType": "application/json"
@@ -300,7 +300,7 @@
                 "op": [
                     "invokeaction"
                 ],
-                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/addItemsRow",
+                "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/messages/inbox/addItemsRow",
                 "contentType": "application/json",
                 "response": {
                     "contentType": "application/json"
@@ -387,7 +387,7 @@
                 "op": [
                     "invokeaction"
                 ],
-                "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/inbox/removeItemsRow",
+                "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/messages/inbox/removeItemsRow",
                 "contentType": "application/json",
                 "response": {
                     "contentType": "application/json"
@@ -476,7 +476,7 @@
           "op": [
             "subscribeevent"
           ],
-          "href": "io.github.pervasivecats:shelving-{storeId}-{shelvingGroupId}-{id}/messages/outbox/catalogItemLiftingRegistered",
+          "href": "io.github.pervasivecats:shelving-{store}-{shelvingGroup}-{id}/messages/outbox/catalogItemLiftingRegistered",
           "contentType": "application/json"
         }
       ],

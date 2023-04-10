@@ -7,6 +7,7 @@
 package io.github.pervasivecats
 package stores.application.actors.commands
 
+import akka.actor.typed.ActorRef
 import org.eclipse.ditto.client.DittoClient
 
 import stores.store.valueobjects.{CatalogItem, Currency, ItemId, ItemsRowId, ShelfId, ShelvingGroupId, ShelvingId, StoreId}
@@ -38,18 +39,43 @@ object DittoCommand {
     itemsRowId: ItemsRowId
   ) extends DittoCommand
 
-  final case class AddShelf(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId)
-    extends DittoCommand
+  final case class AddShelving(
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    replyTo: ActorRef[Validated[Unit]]
+  ) extends DittoCommand
 
-  final case class RemoveShelf(storeId: StoreId, shelvingGroupId: ShelvingGroupId, shelvingId: ShelvingId, shelfId: ShelfId)
-    extends DittoCommand
+  final case class RemoveShelving(
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    replyTo: ActorRef[Validated[Unit]]
+  ) extends DittoCommand
+
+  final case class AddShelf(
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    replyTo: ActorRef[Validated[Unit]]
+  ) extends DittoCommand
+
+  final case class RemoveShelf(
+    storeId: StoreId,
+    shelvingGroupId: ShelvingGroupId,
+    shelvingId: ShelvingId,
+    shelfId: ShelfId,
+    replyTo: ActorRef[Validated[Unit]]
+  ) extends DittoCommand
 
   final case class AddItemsRow(
     storeId: StoreId,
     shelvingGroupId: ShelvingGroupId,
     shelvingId: ShelvingId,
     shelfId: ShelfId,
-    itemsRowId: ItemsRowId
+    itemsRowId: ItemsRowId,
+    replyTo: ActorRef[Validated[Unit]]
   ) extends DittoCommand
 
   final case class RemoveItemsRow(
@@ -57,6 +83,7 @@ object DittoCommand {
     shelvingGroupId: ShelvingGroupId,
     shelvingId: ShelvingId,
     shelfId: ShelfId,
-    itemsRowId: ItemsRowId
+    itemsRowId: ItemsRowId,
+    replyTo: ActorRef[Validated[Unit]]
   ) extends DittoCommand
 }

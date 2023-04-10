@@ -11,16 +11,16 @@
     },
     "security": "nosec_sc",
     "uriVariables": {
-        "storeId": {
-          "title": "storeId",
+        "store": {
+          "title": "store",
           "description": "The id of the store the anti-theft system is in.",
           "type": "integer",
           "minimum": 0
         }
     },
     "properties": {
-        "storeId": {
-            "title": "storeId",
+        "store": {
+            "title": "store",
             "observable": false,
             "readOnly": true,
             "description": "The id of store the anti-theft system is in.",
@@ -31,7 +31,7 @@
                     "op": [
                         "readproperty"
                     ],
-                    "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/attributes/storeId"
+                    "href": "io.github.pervasivecats:antiTheftSystem-{store}/attributes/store"
                 }
             ]
         }
@@ -45,7 +45,7 @@
                     "op": [
                         "invokeaction"
                     ],
-                    "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/messages/inbox/raiseAlarm",
+                    "href": "io.github.pervasivecats:antiTheftSystem-{store}/messages/inbox/raiseAlarm",
                     "contentType": "none/none",
                     "response": {
                         "contentType": "application/json"
@@ -117,7 +117,7 @@
                     "op": [
                         "subscribeevent"
                     ],
-                    "href": "io.github.pervasivecats:antiTheftSystem-{storeId}/messages/outbox/itemDetected",
+                    "href": "io.github.pervasivecats:antiTheftSystem-{store}/messages/outbox/itemDetected",
                     "contentType": "application/json"
                 }
             ],
