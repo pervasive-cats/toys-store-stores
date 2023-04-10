@@ -7,12 +7,6 @@
 [![Issues](https://img.shields.io/github/issues/pervasive-cats/toys-store-stores)](https://github.com/pervasive-cats/toys-store-stores/issues)
 [![Pull requests](https://img.shields.io/github/issues-pr/pervasive-cats/toys-store-stores)](https://github.com/pervasive-cats/toys-store-stores/pulls)
 [![Codecov](https://codecov.io/gh/pervasive-cats/toys-store-stores/branch/main/graph/badge.svg?token=UX36N6CU78)](https://codecov.io/gh/pervasive-cats/toys-store-stores)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=bugs)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
-[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=pervasive-cats_toys-store-stores&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=pervasive-cats_toys-store-stores)
 
 ### Copyright statement
 
