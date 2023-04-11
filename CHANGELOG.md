@@ -1,3 +1,35 @@
+# [1.0.0-beta.5](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2023-04-11)
+
+
+### Bug Fixes
+
+* add Currency value object ([552d2fb](https://github.com/pervasive-cats/toys-store-stores/commit/552d2fbd5bb6cdc4673fa3b55d1a197c361a59f7))
+* add missing add and remove shelving ditto commands with tests, fix ditto actor tests with real item state handlers ([b1356de](https://github.com/pervasive-cats/toys-store-stores/commit/b1356de355bcd11e86c12bff77f7e9ee37d67ba5))
+* change action and event in anti theft system ThingModel ([a840446](https://github.com/pervasive-cats/toys-store-stores/commit/a8404462b1fb2dd0a80dceb89e7339824e68adfe))
+* change ItemDetected event signature ([8c2e1eb](https://github.com/pervasive-cats/toys-store-stores/commit/8c2e1eb2d9bbda9417214e193b12ff8e0e120239))
+* drop system action test ([75e9ce9](https://github.com/pervasive-cats/toys-store-stores/commit/75e9ce91a80ba30fbeb94bb04c65b5bb0e49fe51))
+* remove excessive curly brackets from thing id in Ditto actor ([71313bd](https://github.com/pervasive-cats/toys-store-stores/commit/71313bd93f633de76c9e90e1bfb479352ac2e70a))
+* remove useless events, services, routes, commands and related tests ([adf1f38](https://github.com/pervasive-cats/toys-store-stores/commit/adf1f383854a8a087220c34dc1087675d61d3967))
+* run ditto actor long-running behavior code in separate executor ([b8ab3f6](https://github.com/pervasive-cats/toys-store-stores/commit/b8ab3f605ad0c100e3d975a9756ac40eff5271e4))
+* thingModel config ([4ba2f65](https://github.com/pervasive-cats/toys-store-stores/commit/4ba2f652834f802cb646dc68d1fb07d2fc3e392d))
+* ThingModel url ([232ab83](https://github.com/pervasive-cats/toys-store-stores/commit/232ab83779d80897899e4421a3c2bb44b5248d55))
+
+
+### Features
+
+* add antiTheftSystem ThingModel ([913c18c](https://github.com/pervasive-cats/toys-store-stores/commit/913c18ca86c66209ef1f78b139765203c32ecaa7))
+* add base implementation for DittoActor ([c9a124c](https://github.com/pervasive-cats/toys-store-stores/commit/c9a124c824764cfa5db0c989c25527588588b5f3))
+* add drop system showItemData ([39775f0](https://github.com/pervasive-cats/toys-store-stores/commit/39775f07ac8ade96c0d0f20cf939b3258855c15b))
+* add drop system thing model ([742b407](https://github.com/pervasive-cats/toys-store-stores/commit/742b407c963f1128c4a6e3dfb29e2eca8866a0c6))
+* add dropSystem event handling ([d4f2f66](https://github.com/pervasive-cats/toys-store-stores/commit/d4f2f666379eb8eb7eb866e4d62676a254c111d1))
+* add item state handlers implmentation ([67c3bc9](https://github.com/pervasive-cats/toys-store-stores/commit/67c3bc908fa322893b5a9fe64760b258353fa66f))
+* add mock implementation for handlers of item state changes ([e5b9093](https://github.com/pervasive-cats/toys-store-stores/commit/e5b9093295944bdc0ff3215aa857cab8107936e4))
+* add repository to shelf event handler ([42f396e](https://github.com/pervasive-cats/toys-store-stores/commit/42f396e0181253928e1ebf1914d244ce680c2324))
+* add shelving Thing action triggers to ditto actor ([9b4a239](https://github.com/pervasive-cats/toys-store-stores/commit/9b4a23983406585b01a47432ccfe44e49cd1fd13))
+* add shelving Thing event to ditto actor ([0e12b65](https://github.com/pervasive-cats/toys-store-stores/commit/0e12b652b4b8036a1ebe3fafd9b70125ff05c551))
+* add shelving thing model to ditto actor ([7774f05](https://github.com/pervasive-cats/toys-store-stores/commit/7774f0593b073e816edea35c10b983c578350a7c))
+* add shelving ThingModel ([67baedb](https://github.com/pervasive-cats/toys-store-stores/commit/67baedbf368c56dedeb0ff2fcca032ebe58077d1))
+
 # [1.0.0-beta.4](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2023-03-28)
 
 

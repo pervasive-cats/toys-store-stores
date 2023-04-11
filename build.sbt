@@ -45,7 +45,7 @@ lazy val root = project
       enumeratum
     ),
     wartremoverErrors ++= Warts.allBut(Wart.ImplicitParameter),
-    version := "1.0.0-beta.4",
+    version := "1.0.0-beta.5",
     coverageMinimumStmtTotal := 80,
     coverageMinimumBranchTotal := 80,
     headerLicense := Some(
