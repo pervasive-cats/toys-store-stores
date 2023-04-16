@@ -79,7 +79,7 @@ object Serializers extends DefaultJsonProtocol {
 
   given JsonFormat[CatalogItemLifted] with {
 
-    override def read(json: JsValue): CatalogItemLifted = json.asJsObject.getFields("catalogItem", "storeId") match {
+    override def read(json: JsValue): CatalogItemLifted = json.asJsObject.getFields("id", "store") match {
       case Seq(JsNumber(catalogItem), JsNumber(storeId)) if catalogItem.isValidLong && storeId.isValidLong =>
         (for {
           c <- CatalogItem(catalogItem.longValue)
@@ -97,7 +97,7 @@ object Serializers extends DefaultJsonProtocol {
 
   given JsonFormat[ItemReturned] with {
 
-    override def read(json: JsValue): ItemReturned = json.asJsObject.getFields("catalogItem", "itemId", "storeId") match {
+    override def read(json: JsValue): ItemReturned = json.asJsObject.getFields("kind", "id", "store") match {
       case Seq(JsNumber(catalogItem), JsNumber(itemId), JsNumber(storeId))
            if catalogItem.isValidLong && itemId.isValidLong && storeId.isValidLong =>
         (for {
