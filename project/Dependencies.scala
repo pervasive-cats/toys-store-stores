@@ -6,7 +6,7 @@ object Dependencies {
 
   lazy val scalatest: ModuleID = "org.scalatest" %% "scalatest" % "3.2.15" % Test
 
-  lazy val refined: ModuleID = "eu.timepit" %% "refined" % "0.10.2"
+  lazy val refined: ModuleID = "eu.timepit" %% "refined" % "0.10.3"
 
   lazy val akka: ModuleID = "com.typesafe.akka" %% "akka-actor-typed" % "2.7.0"
 
