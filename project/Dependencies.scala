@@ -30,7 +30,7 @@ object Dependencies {
 
   lazy val testContainersPostgresql: ModuleID = "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.15" % Test
 
-  lazy val ditto: ModuleID = "org.eclipse.ditto" % "ditto-client" % "3.1.1"
+  lazy val ditto: ModuleID = "org.eclipse.ditto" % "ditto-client" % "3.2.0"
 
   lazy val quill: ModuleID = "io.getquill" %% "quill-jdbc" % "4.6.0.1"
 
