@@ -24,7 +24,7 @@ object Dependencies {
 
   lazy val akkaHttpTestkit: ModuleID = "com.typesafe.akka" %% "akka-http-testkit" % "10.5.0" % Test
 
-  lazy val testContainers: ModuleID = "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.12" % Test
+  lazy val testContainers: ModuleID = "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.15" % Test
 
   lazy val postgresql: ModuleID = "org.postgresql" % "postgresql" % "42.5.4"
 
