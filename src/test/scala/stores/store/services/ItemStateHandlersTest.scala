@@ -9,11 +9,9 @@ package stores.store.services
 
 import java.util.concurrent.*
 import javax.sql.DataSource
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.ActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -33,11 +31,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.testcontainers.utility.DockerImageName
 import spray.json.DefaultJsonProtocol.*
-import spray.json.JsNumber
-import spray.json.JsObject
-import spray.json.JsString
-import spray.json.JsValue
-
+import spray.json.{JsNull, JsNumber, JsObject, JsString, JsValue}
 import stores.application.actors.commands.*
 import stores.application.actors.DittoActor
 import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}
@@ -101,13 +95,16 @@ class ItemStateHandlersTest extends AnyFunSpec with TestContainerForAll with Bef
                        if id.isValidLong && kind.longValue === catalogItem.id && store.longValue === storeId.value =>
                     complete(
                       JsObject(
-                        "state" -> JsString(
-                          if (id.longValue === inCartItemId.value)
-                            "InCartItem"
-                          else if (id.longValue === returnedItemId.value)
-                            "ReturnedItem"
-                          else
-                            "InPlaceItem"
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "state" -> JsString(
+                            if (id.longValue === inCartItemId.value)
+                              "InCartItem"
+                            else if (id.longValue === returnedItemId.value)
+                              "ReturnedItem"
+                            else
+                              "InPlaceItem"
+                          )
                         )
                       )
                     )
@@ -116,7 +113,7 @@ class ItemStateHandlersTest extends AnyFunSpec with TestContainerForAll with Bef
               }
             }
           },
-          path("catalogItem") {
+          path("catalog_item") {
             get {
               entity(as[JsValue]) {
                 _.asJsObject.getFields("id", "store") match {
@@ -124,10 +121,13 @@ class ItemStateHandlersTest extends AnyFunSpec with TestContainerForAll with Bef
                        if id.longValue === catalogItem.id && store.longValue === storeId.value =>
                     complete(
                       JsObject(
-                        "category" -> JsNumber(itemCategory),
-                        "price" -> JsObject(
-                          "amount" -> JsNumber(amount),
-                          "currency" -> JsString(currency.entryName)
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "category" -> JsNumber(itemCategory),
+                          "price" -> JsObject(
+                            "amount" -> JsNumber(amount),
+                            "currency" -> JsString(currency.entryName)
+                          )
                         )
                       )
                     )
@@ -136,15 +136,18 @@ class ItemStateHandlersTest extends AnyFunSpec with TestContainerForAll with Bef
               }
             }
           },
-          path("itemCategory") {
+          path("item_category") {
             get {
               entity(as[JsValue]) {
                 _.asJsObject.getFields("id") match {
                   case Seq(JsNumber(id)) if id.longValue === itemCategory =>
                     complete(
                       JsObject(
-                        "name" -> JsString(name),
-                        "description" -> JsString(description)
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "name" -> JsString(name),
+                          "description" -> JsString(description)
+                        )
                       )
                     )
                   case _ => complete(StatusCodes.BadRequest, JsObject.empty)

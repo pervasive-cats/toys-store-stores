@@ -48,7 +48,7 @@ import org.eclipse.ditto.things.model.ThingId
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
-import spray.json.{enrichAny, JsBoolean, JsNumber, JsObject, JsString, JsValue}
+import spray.json.{JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, enrichAny}
 import spray.json.DefaultJsonProtocol.IntJsonFormat
 
 import java.util.concurrent.*
@@ -106,13 +106,16 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
                        if id.isValidLong && kind.longValue === catalogItem.id && store.longValue === storeId.value =>
                     complete(
                       JsObject(
-                        "state" -> JsString(
-                          if (id.longValue === inCartItemId.value)
-                            "InCartItem"
-                          else if (id.longValue === returnedItemId.value)
-                            "ReturnedItem"
-                          else
-                            "InPlaceItem"
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "state" -> JsString(
+                            if (id.longValue === inCartItemId.value)
+                              "InCartItem"
+                            else if (id.longValue === returnedItemId.value)
+                              "ReturnedItem"
+                            else
+                              "InPlaceItem"
+                          )
                         )
                       )
                     )
@@ -121,7 +124,7 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
               }
             }
           },
-          path("catalogItem") {
+          path("catalog_item") {
             get {
               entity(as[JsValue]) {
                 _.asJsObject.getFields("id", "store") match {
@@ -129,10 +132,13 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
                        if id.longValue === catalogItem.id && store.longValue === storeId.value =>
                     complete(
                       JsObject(
-                        "category" -> JsNumber(itemCategory),
-                        "price" -> JsObject(
-                          "amount" -> JsNumber(amount),
-                          "currency" -> JsString(currency.entryName)
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "category" -> JsNumber(itemCategory),
+                          "price" -> JsObject(
+                            "amount" -> JsNumber(amount),
+                            "currency" -> JsString(currency.entryName)
+                          )
                         )
                       )
                     )
@@ -141,15 +147,18 @@ class DittoActorTest extends AnyFunSpec with BeforeAndAfterAll with SprayJsonSup
               }
             }
           },
-          path("itemCategory") {
+          path("item_category") {
             get {
               entity(as[JsValue]) {
                 _.asJsObject.getFields("id") match {
                   case Seq(JsNumber(id)) if id.longValue === itemCategory =>
                     complete(
                       JsObject(
-                        "name" -> JsString(name),
-                        "description" -> JsString(description)
+                        "error" -> JsNull,
+                        "result" -> JsObject(
+                          "name" -> JsString(name),
+                          "description" -> JsString(description)
+                        )
                       )
                     )
                   case _ => complete(StatusCodes.BadRequest, JsObject.empty)

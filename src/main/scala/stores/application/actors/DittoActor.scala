@@ -298,7 +298,7 @@ object DittoActor extends SprayJsonSupport {
                               Some(ErrorResponseEntity(DittoError).toJson.compactPrint)
                             )
                         },
-                      "catalogItemId",
+                      "catalogItem",
                       "itemId"
                     )
                 )

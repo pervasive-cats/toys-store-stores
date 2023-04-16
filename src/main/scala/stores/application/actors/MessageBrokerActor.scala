@@ -10,26 +10,17 @@ package stores.application.actors
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ForkJoinPool
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.*
-
 import akka.actor.typed.*
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.*
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.JsNull
-import spray.json.JsObject
-import spray.json.JsString
-import spray.json.JsValue
-import spray.json.JsonFormat
-import spray.json.enrichAny
-import spray.json.enrichString
-
+import spray.json.{JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, enrichAny, enrichString}
 import stores.application.RequestProcessingFailed
 import stores.application.Serializers.given
 import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted, ItemReturned}
@@ -38,7 +29,7 @@ import stores.application.actors.commands.{MessageBrokerCommand, RootCommand}
 import stores.application.routes.entities.Entity
 import stores.application.routes.entities.Entity.{ErrorResponseEntity, ResultResponseEntity}
 import stores.store.services.ItemStateHandlers
-import stores.store.domainevents.{ItemReturned as ItemReturnedEvent, CatalogItemLifted as CatalogItemLiftedEvent}
+import stores.store.domainevents.{CatalogItemLifted as CatalogItemLiftedEvent, ItemReturned as ItemReturnedEvent}
 
 object MessageBrokerActor {
 
@@ -76,7 +67,7 @@ object MessageBrokerActor {
       (_: String, message: Delivery) => {
         val body: String = String(message.getBody, StandardCharsets.UTF_8)
         body.parseJson.asJsObject.getFields("result", "error") match {
-          case Seq(JsObject(_), JsNull) => ()
+          case Seq(JsNumber(1), JsNull) => ()
           case Seq(JsNull, JsObject(_)) =>
             (
               itemReturnedRequests.get(UUID.fromString(message.getProperties.getCorrelationId)),
