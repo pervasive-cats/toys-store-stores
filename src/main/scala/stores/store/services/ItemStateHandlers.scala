@@ -7,15 +7,13 @@
 package io.github.pervasivecats
 package stores.store.services
 
-import AnyOps.*
-import stores.application.Serializers.given
-import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}
-import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted as CatalogItemLiftedCommand, ItemReturned as ItemReturnedCommand}
-import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand}
-import stores.application.routes.entities.Entity.*
-import stores.store.Repository
-import stores.store.domainevents.*
-import stores.store.valueobjects.{CatalogItem, Currency, ItemId, StoreId}
+import java.util.concurrent.ForkJoinPool
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationInt
 
 import akka.actor.ActorSystem
 import akka.actor.typed.ActorRef
@@ -25,11 +23,28 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol.*
-import spray.json.{enrichAny, JsObject, JsString, JsValue, JsonFormat, JsonReader, RootJsonReader, RootJsonWriter, deserializationError}
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+import spray.json.JsonFormat
+import spray.json.JsonReader
+import spray.json.RootJsonReader
+import spray.json.RootJsonWriter
+import spray.json.deserializationError
+import spray.json.enrichAny
 
-import java.util.concurrent.ForkJoinPool
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.{Duration, DurationInt}
+import AnyOps.*
+import stores.application.Serializers.given
+import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}
+import stores.application.actors.commands.MessageBrokerCommand.{
+  CatalogItemLifted as CatalogItemLiftedCommand,
+  ItemReturned as ItemReturnedCommand
+}
+import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand}
+import stores.application.routes.entities.Entity.*
+import stores.store.Repository
+import stores.store.domainevents.*
+import stores.store.valueobjects.{CatalogItem, Currency, ItemId, StoreId}
 
 trait ItemStateHandlers {
 

@@ -9,9 +9,11 @@ package stores.store.services
 
 import java.util.concurrent.*
 import javax.sql.DataSource
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -31,7 +33,12 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers.*
 import org.testcontainers.utility.DockerImageName
 import spray.json.DefaultJsonProtocol.*
-import spray.json.{JsNull, JsNumber, JsObject, JsString, JsValue}
+import spray.json.JsNull
+import spray.json.JsNumber
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+
 import stores.application.actors.commands.*
 import stores.application.actors.DittoActor
 import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}

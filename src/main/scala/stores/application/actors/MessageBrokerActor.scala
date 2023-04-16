@@ -10,17 +10,27 @@ package stores.application.actors
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ForkJoinPool
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.*
+
 import akka.actor.typed.*
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import com.rabbitmq.client.*
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol.StringJsonFormat
-import spray.json.{JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, enrichAny, enrichString}
+import spray.json.JsNull
+import spray.json.JsNumber
+import spray.json.JsObject
+import spray.json.JsString
+import spray.json.JsValue
+import spray.json.JsonFormat
+import spray.json.enrichAny
+import spray.json.enrichString
+
 import stores.application.RequestProcessingFailed
 import stores.application.Serializers.given
 import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted, ItemReturned}
