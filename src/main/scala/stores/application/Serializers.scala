@@ -24,16 +24,6 @@ import stores.store.valueobjects.*
 
 object Serializers extends DefaultJsonProtocol {
 
-  private def stringSerializer[A](extractor: A => String, builder: String => Validated[A]): JsonFormat[A] = new JsonFormat[A] {
-
-    override def read(json: JsValue): A = json match {
-      case JsString(value) => builder(value).fold(e => deserializationError(e.message), identity)
-      case _ => deserializationError(msg = "Json format is not valid")
-    }
-
-    override def write(obj: A): JsValue = extractor(obj).toJson
-  }
-
   private def longSerializer[A](extractor: A => Long, builder: Long => Validated[A]): JsonFormat[A] = new JsonFormat[A] {
 
     override def read(json: JsValue): A = json match {
@@ -100,8 +90,8 @@ object Serializers extends DefaultJsonProtocol {
 
     override def write(obj: CatalogItemLifted): JsValue = JsObject(
       "type" -> "CatalogItemLifted".toJson,
-      "catalogItem" -> obj.catalogItem.toJson,
-      "storeId" -> obj.storeId.toJson
+      "id" -> obj.catalogItem.toJson,
+      "store" -> obj.storeId.toJson
     )
   }
 
@@ -120,36 +110,9 @@ object Serializers extends DefaultJsonProtocol {
 
     override def write(obj: ItemReturned): JsValue = JsObject(
       "type" -> "ItemReturned".toJson,
-      "catalogItem" -> obj.catalogItem.toJson,
-      "itemId" -> obj.itemId.toJson,
-      "storeId" -> obj.storeId.toJson
-    )
-  }
-
-  given JsonFormat[CatalogItemLiftingRegistered] with {
-
-    override def read(json: JsValue): CatalogItemLiftingRegistered =
-      json.asJsObject.getFields("storeId", "shelvingGroupId", "shelvingId", "shelfId", "itemsRowId") match {
-        case Seq(JsNumber(storeId), JsNumber(shelvingGroupId), JsNumber(shelvingId), JsNumber(shelfId), JsNumber(itemsRowId))
-             if storeId.isValidLong && shelvingGroupId.isValidLong && shelvingId.isValidLong && shelfId.isValidLong && itemsRowId.isValidLong =>
-          (for {
-            store <- StoreId(storeId.longValue)
-            shelvingGroup <- ShelvingGroupId(shelvingGroupId.longValue)
-            shelving <- ShelvingId(shelvingId.longValue)
-            shelf <- ShelfId(shelfId.longValue)
-            itemsRow <- ItemsRowId(itemsRowId.longValue)
-          } yield CatalogItemLiftingRegistered(store, shelvingGroup, shelving, shelf, itemsRow))
-            .fold(e => deserializationError(e.message), identity)
-        case _ => deserializationError(msg = "Json format is not valid")
-      }
-
-    override def write(obj: CatalogItemLiftingRegistered): JsValue = JsObject(
-      "type" -> "CatalogItemLiftingRegistered".toJson,
-      "storeId" -> obj.storeId.toJson,
-      "shelvingGroupId" -> obj.shelvingGroupId.toJson,
-      "shelvingId" -> obj.shelvingId.toJson,
-      "shelfId" -> obj.shelfId.toJson,
-      "itemsRowId" -> obj.itemsRowId.toJson
+      "kind" -> obj.catalogItem.toJson,
+      "id" -> obj.itemId.toJson,
+      "store" -> obj.storeId.toJson
     )
   }
 }

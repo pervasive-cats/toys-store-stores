@@ -7,13 +7,15 @@
 package io.github.pervasivecats
 package stores.store.services
 
-import java.util.concurrent.ForkJoinPool
-
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.DurationInt
+import AnyOps.*
+import stores.application.Serializers.given
+import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}
+import stores.application.actors.commands.MessageBrokerCommand.{CatalogItemLifted as CatalogItemLiftedCommand, ItemReturned as ItemReturnedCommand}
+import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand}
+import stores.application.routes.entities.Entity.*
+import stores.store.Repository
+import stores.store.domainevents.*
+import stores.store.valueobjects.{CatalogItem, Currency, ItemId, StoreId}
 
 import akka.actor.ActorSystem
 import akka.actor.typed.ActorRef
@@ -23,25 +25,11 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol.*
-import spray.json.JsString
-import spray.json.JsValue
-import spray.json.JsonFormat
-import spray.json.JsonReader
-import spray.json.RootJsonReader
-import spray.json.RootJsonWriter
-import spray.json.deserializationError
+import spray.json.{enrichAny, JsObject, JsString, JsValue, JsonFormat, JsonReader, RootJsonReader, RootJsonWriter, deserializationError}
 
-import stores.application.actors.commands.DittoCommand.{RaiseAlarm, ShowItemData}
-import stores.application.actors.commands.{DittoCommand, MessageBrokerCommand}
-import stores.store.domainevents.*
-import stores.store.valueobjects.{CatalogItem, Currency, ItemId, StoreId}
-import stores.store.Repository
-import AnyOps.*
-import stores.application.actors.commands.MessageBrokerCommand.{
-  CatalogItemLifted as CatalogItemLiftedCommand,
-  ItemReturned as ItemReturnedCommand
-}
-import stores.application.Serializers.given
+import java.util.concurrent.ForkJoinPool
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.{Duration, DurationInt}
 
 trait ItemStateHandlers {
 
@@ -83,7 +71,7 @@ object ItemStateHandlers extends SprayJsonSupport {
 
     private case class CatalogItemData(category: Long, price: Price)
 
-    private given RootJsonReader[CatalogItemData] = jsonFormat2(CatalogItemData.apply)
+    private given JsonFormat[CatalogItemData] = jsonFormat2(CatalogItemData.apply)
 
     private case class ItemCategoryRequest(id: Long)
 
@@ -91,18 +79,18 @@ object ItemStateHandlers extends SprayJsonSupport {
 
     private case class ItemCategoryData(name: String, description: String)
 
-    private given RootJsonReader[ItemCategoryData] = jsonFormat2(ItemCategoryData.apply)
+    private given JsonFormat[ItemCategoryData] = jsonFormat2(ItemCategoryData.apply)
 
     override def onItemInserted(event: ItemInsertedInDropSystem): Validated[Unit] =
       Await
         .result(
           (for {
-            cr <- httpClient.singleRequest(Get(itemURI + "catalogItem", CatalogItemRequest(event.catalogItem, event.storeId)))
-            c <- Unmarshal(cr.entity).to[CatalogItemData]
-            ir <- httpClient.singleRequest(Get(itemURI + "itemCategory", ItemCategoryRequest(c.category)))
-            i <- Unmarshal(ir.entity).to[ItemCategoryData]
+            cr <- httpClient.singleRequest(Get(itemURI + "catalog_item", CatalogItemRequest(event.catalogItem, event.storeId)))
+            c <- Unmarshal(cr.entity).to[ResultResponseEntity[CatalogItemData]]
+            ir <- httpClient.singleRequest(Get(itemURI + "item_category", ItemCategoryRequest(c.result.category)))
+            i <- Unmarshal(ir.entity).to[ResultResponseEntity[ItemCategoryData]]
           } yield Right[ValidationError, ShowItemData](
-            ShowItemData(event.storeId, i.name, i.description, c.price.amount, c.price.currency)
+            ShowItemData(event.storeId, i.result.name, i.result.description, c.result.price.amount, c.result.price.currency)
           ))
             .fallbackTo(Future.successful(Left[ValidationError, ShowItemData](EventRejected))),
           duration
@@ -139,13 +127,17 @@ object ItemStateHandlers extends SprayJsonSupport {
       case InCartItem extends ItemState(name = "InCartItem")
     }
 
-    private given RootJsonReader[ItemState] with {
+    private given JsonFormat[ItemState] with {
 
       override def read(json: JsValue): ItemState = json.asJsObject.getFields("state") match {
         case Seq(JsString(state)) =>
           ItemState.values.find(_.name === state).getOrElse(deserializationError(msg = "Json format was not valid"))
         case _ => deserializationError(msg = "Json format was not valid")
       }
+
+      override def write(itemState: ItemState): JsValue = JsObject(
+        "state" -> itemState.name.toJson
+      )
     }
 
     override def onItemDetected(event: ItemDetected): Validated[Unit] =
@@ -153,8 +145,8 @@ object ItemStateHandlers extends SprayJsonSupport {
         .result(
           (for {
             ir <- httpClient.singleRequest(Get(itemURI + "item", ItemRequest(event.itemId, event.catalogItem, event.storeId)))
-            i <- Unmarshal(ir.entity).to[ItemState]
-          } yield Right[ValidationError, ItemState](i))
+            i <- Unmarshal(ir.entity).to[ResultResponseEntity[ItemState]]
+          } yield Right[ValidationError, ItemState](i.result))
             .fallbackTo(Future.successful(Left[ValidationError, ItemState](EventRejected))),
           duration
         )
