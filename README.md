@@ -8,6 +8,10 @@
 [![Pull requests](https://img.shields.io/github/issues-pr/pervasive-cats/toys-store-stores)](https://github.com/pervasive-cats/toys-store-stores/pulls)
 [![Codecov](https://codecov.io/gh/pervasive-cats/toys-store-stores/branch/main/graph/badge.svg?token=UX36N6CU78)](https://codecov.io/gh/pervasive-cats/toys-store-stores)
 
+## Documentation
+
+The code documentation can be found at [this link](https://pervasive-cats.github.io/toys-store-stores/).
+
 ### Copyright statement
 
 The entire content of this repository is Copyright © 2022-2023 by Pervasive Cats S.r.l.s. All Rights Reserved. This repository may
