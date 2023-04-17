@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/pervasive-cats/toys-store-stores/compare/v1.0.0...v1.0.1) (2023-04-17)
+
+
+### Bug Fixes
+
+* fix bugs in message reception and ditto interaction ([cbeda7a](https://github.com/pervasive-cats/toys-store-stores/commit/cbeda7a38c88f7acfe9dc2ab981aae2a38340634))
+* fix deserialization of events ([07d40b1](https://github.com/pervasive-cats/toys-store-stores/commit/07d40b16a1dfa3647bb10d3ab1502ee2940bcb78))
+
 # 1.0.0 (2023-04-16)
 
 
