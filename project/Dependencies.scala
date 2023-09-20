@@ -8,7 +8,7 @@ object Dependencies {
 
   lazy val refined: ModuleID = "eu.timepit" %% "refined" % "0.10.3"
 
-  lazy val akka: ModuleID = "com.typesafe.akka" %% "akka-actor-typed" % "2.8.0"
+  lazy val akka: ModuleID = "com.typesafe.akka" %% "akka-actor-typed" % "2.8.5"
 
   lazy val akkaStream: ModuleID = "com.typesafe.akka" %% "akka-stream" % "2.8.0"
 
